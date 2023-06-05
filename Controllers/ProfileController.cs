@@ -6,6 +6,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LearnApi.Models;
+using LearnApi.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LearnApi.Controllers
 {
@@ -14,13 +18,72 @@ namespace LearnApi.Controllers
     public class ProfileController : ControllerBase
     {
         private readonly TodoContext _context;
+        private readonly UserManager<IdentityUser> _userManager;
+        private readonly JwtService _jwtService;
 
-        public ProfileController(TodoContext context)
+
+        public ProfileController(TodoContext context, UserManager<IdentityUser> userManager, JwtService jwtService)
         {
             _context = context;
+            _userManager = userManager;
+            _jwtService = jwtService;
         }
 
-        // GET: api/Profile
+        [HttpPost]
+        [Route("register")]
+        public async Task<IActionResult> Register(ProfileRegisterDto profileR)
+        {
+            var result =
+                await _context.Profiles.FirstOrDefaultAsync(p =>
+                    p.Username == profileR.Username || p.Email == profileR.Email);
+            if (result != null)
+            {
+                if (result.Username == profileR.Username)
+                {
+                    return Conflict("Username already in use!");
+                }
+                if (result.Email == profileR.Email)
+                {
+                    return Conflict("Email already in use!");
+                }
+            }
+
+            var newP = await _userManager.CreateAsync(
+                new IdentityUser() { UserName = profileR.Username, Email = profileR.Email }, profileR.Password);
+
+            if (!newP.Succeeded)
+            {
+                return BadRequest(newP.Errors);
+            }
+
+            return Created("congrats", newP);
+            // var newProfile = new Profile(profileR);
+            // _context.Profiles.Add(newProfile);
+            // await _context.SaveChangesAsync();           
+            // return Ok(newProfile);
+        }
+        
+        [HttpPost]
+        [Route("login")]
+        public async Task<IActionResult> Login(ProfileLoginDto profileL)
+        {
+            var profileFound = await _userManager.FindByNameAsync(profileL.Username);
+
+            if (profileFound == null)
+            {
+                return NotFound();
+            }
+
+            var result = await _userManager.CheckPasswordAsync(profileFound, profileL.Password);
+            if (result)
+            {
+                var token = _jwtService.CreateToken(profileFound);
+                return Ok(new {token = token, user = profileFound });
+            }
+
+            return Unauthorized(new {mesasge = "sorry!", profileFound});
+        }
+        
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Profile>>> GetProfiles()
         {
@@ -28,7 +91,7 @@ namespace LearnApi.Controllers
           {
               return NotFound();
           }
-            return await _context.Profiles.ToListAsync();
+            return await _context.Profiles.Include(p => p.Worksheets).ToListAsync();
         }
 
         // GET: api/Profile/5
@@ -103,7 +166,7 @@ namespace LearnApi.Controllers
             {
                 return NotFound();
             }
-            var profile = await _context.Profiles.FindAsync(id);
+            var profile = await _context.Profiles.Include(p => p.Worksheets).FirstOrDefaultAsync(p => p.Id == id);
             if (profile == null)
             {
                 return NotFound();

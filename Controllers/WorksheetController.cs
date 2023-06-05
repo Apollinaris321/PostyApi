@@ -89,6 +89,13 @@ namespace LearnApi.Controllers
           {
               return Problem("Entity set 'TodoContext.Worksheets'  is null.");
           }
+
+          if (worksheet.ProfileId != null)
+          {
+              var owner = await _context.Profiles.FirstOrDefaultAsync(p => p.Id == worksheet.ProfileId);
+              Console.WriteLine($"hello i found user ; {owner.Worksheets.Count}");
+              owner?.Worksheets.Add(worksheet);
+          }
             _context.Worksheets.Add(worksheet);
             await _context.SaveChangesAsync();
 
