@@ -16,7 +16,7 @@ public class TodoContext : IdentityUserContext<IdentityUser>
         //     .Property(p => p.Username)
         //     .IsRequired();
         base.OnModelCreating(modelBuilder);
-        
+         
         modelBuilder.Entity<Profile>()
             .HasData(
                 new Profile

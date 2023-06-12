@@ -1,11 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "OcUCknKOooP1LaFoBMggJZrXkws0WKkUvUcsrP+CdstGjUbMW7f4SjUiq103lG2D+jTdr0zdnCGLpEg2KErwHw==",
+  "dgSpecHash": "SGgBDgH74XABQ7HwRbMCBtTv3iVQ0VIp/6nRzz02J1YgZcABS6Uy/uuOUk7Sk/786+WWmYMwpBGXaPAEDufpMQ==",
   "success": true,
   "projectFilePath": "C:\\Users\\blura\\Desktop\\MathServer\\LearnApi.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\blura\\.nuget\\packages\\azure.core\\1.24.0\\azure.core.1.24.0.nupkg.sha512",
     "C:\\Users\\blura\\.nuget\\packages\\azure.identity\\1.6.0\\azure.identity.1.6.0.nupkg.sha512",
+    "C:\\Users\\blura\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\blura\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
     "C:\\Users\\blura\\.nuget\\packages\\microsoft.aspnetcore.authentication\\2.2.0\\microsoft.aspnetcore.authentication.2.2.0.nupkg.sha512",
     "C:\\Users\\blura\\.nuget\\packages\\microsoft.aspnetcore.authentication.abstractions\\2.2.0\\microsoft.aspnetcore.authentication.abstractions.2.2.0.nupkg.sha512",
@@ -66,6 +67,7 @@
     "C:\\Users\\blura\\.nuget\\packages\\microsoft.extensions.caching.abstractions\\8.0.0-preview.4.23259.5\\microsoft.extensions.caching.abstractions.8.0.0-preview.4.23259.5.nupkg.sha512",
     "C:\\Users\\blura\\.nuget\\packages\\microsoft.extensions.caching.memory\\8.0.0-preview.4.23259.5\\microsoft.extensions.caching.memory.8.0.0-preview.4.23259.5.nupkg.sha512",
     "C:\\Users\\blura\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\7.0.0\\microsoft.extensions.configuration.abstractions.7.0.0.nupkg.sha512",
+    "C:\\Users\\blura\\.nuget\\packages\\microsoft.extensions.configuration.binder\\7.0.4\\microsoft.extensions.configuration.binder.7.0.4.nupkg.sha512",
     "C:\\Users\\blura\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\8.0.0-preview.4.23259.5\\microsoft.extensions.dependencyinjection.8.0.0-preview.4.23259.5.nupkg.sha512",
     "C:\\Users\\blura\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.0-preview.4.23259.5\\microsoft.extensions.dependencyinjection.abstractions.8.0.0-preview.4.23259.5.nupkg.sha512",
     "C:\\Users\\blura\\.nuget\\packages\\microsoft.extensions.dependencymodel\\7.0.0\\microsoft.extensions.dependencymodel.7.0.0.nupkg.sha512",

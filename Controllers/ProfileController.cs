@@ -1,15 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LearnApi.Models;
 using LearnApi.Services;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
 
 namespace LearnApi.Controllers
 {
@@ -20,14 +18,39 @@ namespace LearnApi.Controllers
         private readonly TodoContext _context;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly JwtService _jwtService;
+        private readonly IConfiguration _configuration;
 
-
-        public ProfileController(TodoContext context, UserManager<IdentityUser> userManager, JwtService jwtService)
+        public ProfileController(TodoContext context,IConfiguration configuration, UserManager<IdentityUser> userManager, JwtService jwtService)
         {
             _context = context;
             _userManager = userManager;
             _jwtService = jwtService;
+            _configuration = configuration;
         }
+        
+        private string CreateToken(Profile profile)
+        {
+            List<Claim> claims = new List<Claim> {
+                new Claim(ClaimTypes.Name, profile.Username),
+                new Claim(ClaimTypes.Role, "Admin"),
+                new Claim(ClaimTypes.Role, "User"),
+            };
+ 
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                _configuration.GetSection("AppSettings:Token").Value!));
+ 
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+ 
+            var token = new JwtSecurityToken(
+                    claims: claims,
+                    expires: DateTime.Now.AddDays(1),
+                    signingCredentials: creds
+                );
+ 
+            var jwt = new JwtSecurityTokenHandler().WriteToken(token);
+ 
+            return jwt;
+        }       
 
         [HttpPost]
         [Route("register")]
@@ -36,65 +59,52 @@ namespace LearnApi.Controllers
             var result =
                 await _context.Profiles.FirstOrDefaultAsync(p =>
                     p.Username == profileR.Username || p.Email == profileR.Email);
+            
             if (result != null)
             {
-                if (result.Username == profileR.Username)
-                {
-                    return Conflict("Username already in use!");
-                }
-                if (result.Email == profileR.Email)
-                {
-                    return Conflict("Email already in use!");
-                }
+                return Conflict("User already exists!");
             }
 
-            var newP = await _userManager.CreateAsync(
-                new IdentityUser() { UserName = profileR.Username, Email = profileR.Email }, profileR.Password);
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(profileR.Password);
 
-            if (!newP.Succeeded)
-            {
-                return BadRequest(newP.Errors);
-            }
+            var newProfile = new Profile(profileR);
+            newProfile.Password = passwordHash;
 
-            return Created("congrats", newP);
-            // var newProfile = new Profile(profileR);
-            // _context.Profiles.Add(newProfile);
-            // await _context.SaveChangesAsync();           
-            // return Ok(newProfile);
+            _context.Profiles.Add(newProfile);
+            await _context.SaveChangesAsync();
+
+            return Ok(newProfile);
         }
         
         [HttpPost]
         [Route("login")]
         public async Task<IActionResult> Login(ProfileLoginDto profileL)
         {
-            var profileFound = await _userManager.FindByNameAsync(profileL.Username);
+            var profileFound = await _context.Profiles.FirstOrDefaultAsync(p => p.Username == profileL.Username);
 
             if (profileFound == null)
             {
                 return NotFound();
             }
 
-            var result = await _userManager.CheckPasswordAsync(profileFound, profileL.Password);
-            if (result)
+            if (BCrypt.Net.BCrypt.Verify(profileL.Password, profileFound.Password))
             {
-                var token = _jwtService.CreateToken(profileFound);
-                return Ok(new {token = token, user = profileFound });
+                string token = CreateToken(profileFound);
+                Response.Cookies.Append();
+                return Ok(token);
             }
 
-            return Unauthorized(new {mesasge = "sorry!", profileFound});
+            return BadRequest(new {message = "wrong password!"});
         }
         
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Profile>>> GetProfiles()
         {
-          if (_context.Profiles == null)
-          {
-              return NotFound();
-          }
             return await _context.Profiles.Include(p => p.Worksheets).ToListAsync();
         }
 
         // GET: api/Profile/5
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<Profile>> GetProfile(long id)
         {
@@ -102,7 +112,7 @@ namespace LearnApi.Controllers
           {
               return NotFound();
           }
-            var profile = await _context.Profiles.FindAsync(id);
+            var profile = await _context.Profiles.Include(p => p.Worksheets).FirstOrDefaultAsync(p => p.Id == id);
 
             if (profile == null)
             {
@@ -148,14 +158,12 @@ namespace LearnApi.Controllers
         [HttpPost]
         public async Task<ActionResult<Profile>> PostProfile(Profile profile)
         {
-          if (_context.Profiles == null)
-          {
-              return Problem("Entity set 'TodoContext.Profiles'  is null.");
-          }
-            _context.Profiles.Add(profile);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetProfile", new { id = profile.Id }, profile);
+            //_context.Profiles.Add(profile);
+            var newProfile = await _userManager.CreateAsync(
+                new IdentityUser() { UserName = profile.Username, Email = profile.Email }, profile.Password
+            );
+            
+            return CreatedAtAction("GetProfile", newProfile);
         }
 
         // DELETE: api/Profile/5
