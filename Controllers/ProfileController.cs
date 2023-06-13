@@ -16,14 +16,12 @@ namespace LearnApi.Controllers
     public class ProfileController : ControllerBase
     {
         private readonly TodoContext _context;
-        private readonly UserManager<IdentityUser> _userManager;
         private readonly JwtService _jwtService;
         private readonly IConfiguration _configuration;
 
-        public ProfileController(TodoContext context,IConfiguration configuration, UserManager<IdentityUser> userManager, JwtService jwtService)
+        public ProfileController(TodoContext context,IConfiguration configuration, JwtService jwtService)
         {
             _context = context;
-            _userManager = userManager;
             _jwtService = jwtService;
             _configuration = configuration;
         }
@@ -43,7 +41,7 @@ namespace LearnApi.Controllers
  
             var token = new JwtSecurityToken(
                     claims: claims,
-                    expires: DateTime.Now.AddDays(1),
+                    expires: DateTime.Now.AddSeconds(5),
                     signingCredentials: creds
                 );
  
@@ -90,7 +88,7 @@ namespace LearnApi.Controllers
             if (BCrypt.Net.BCrypt.Verify(profileL.Password, profileFound.Password))
             {
                 string token = CreateToken(profileFound);
-                Response.Cookies.Append();
+                //Response.Cookies.Append();
                 return Ok(token);
             }
 
@@ -159,11 +157,12 @@ namespace LearnApi.Controllers
         public async Task<ActionResult<Profile>> PostProfile(Profile profile)
         {
             //_context.Profiles.Add(profile);
-            var newProfile = await _userManager.CreateAsync(
-                new IdentityUser() { UserName = profile.Username, Email = profile.Email }, profile.Password
-            );
+            // var newProfile = await _userManager.CreateAsync(
+            //     new IdentityUser() { UserName = profile.Username, Email = profile.Email }, profile.Password
+            // );
             
-            return CreatedAtAction("GetProfile", newProfile);
+            //return CreatedAtAction("GetProfile", newProfile);
+            return Ok();
         }
 
         // DELETE: api/Profile/5

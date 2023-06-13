@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace LearnApi.Models;
-public class TodoContext : IdentityUserContext<IdentityUser>
+public class TodoContext : DbContext
 {
     public TodoContext(DbContextOptions<TodoContext> options)
         : base(options)
