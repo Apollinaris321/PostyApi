@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using LearnApi.Models;
 using LearnApi.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 
 namespace LearnApi.Controllers
@@ -16,13 +15,11 @@ namespace LearnApi.Controllers
     public class ProfileController : ControllerBase
     {
         private readonly TodoContext _context;
-        private readonly JwtService _jwtService;
         private readonly IConfiguration _configuration;
 
-        public ProfileController(TodoContext context,IConfiguration configuration, JwtService jwtService)
+        public ProfileController(TodoContext context,IConfiguration configuration)
         {
             _context = context;
-            _jwtService = jwtService;
             _configuration = configuration;
         }
         
@@ -38,10 +35,11 @@ namespace LearnApi.Controllers
                 _configuration.GetSection("AppSettings:Token").Value!));
  
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+            Console.WriteLine("time : "+ DateTime.UtcNow);
  
             var token = new JwtSecurityToken(
                     claims: claims,
-                    expires: DateTime.Now.AddSeconds(5),
+                    expires: DateTime.UtcNow.AddSeconds(30),
                     signingCredentials: creds
                 );
  
@@ -101,7 +99,6 @@ namespace LearnApi.Controllers
             return await _context.Profiles.Include(p => p.Worksheets).ToListAsync();
         }
 
-        // GET: api/Profile/5
         [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<Profile>> GetProfile(long id)
@@ -110,14 +107,12 @@ namespace LearnApi.Controllers
           {
               return NotFound();
           }
-            var profile = await _context.Profiles.Include(p => p.Worksheets).FirstOrDefaultAsync(p => p.Id == id);
-
-            if (profile == null)
-            {
-                return NotFound();
-            }
-
-            return profile;
+          var profile = await _context.Profiles.Include(p => p.Worksheets).FirstOrDefaultAsync(p => p.Id == id);
+          if (profile == null)
+          {
+              return NotFound();
+          }
+          return profile;
         }
 
         // PUT: api/Profile/5
