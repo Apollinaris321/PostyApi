@@ -9,20 +9,13 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-Console.WriteLine($"key:  {builder.Configuration.GetSection("Jwt:Key").Value}");
-
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddScoped<JwtService>();
+
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<TodoContext>(opt =>
     opt.UseInMemoryDatabase("TodoList"));
-
-builder.Services.AddAuthorization(auth =>
-            {
-                auth.AddPolicy("Bearer", new AuthorizationPolicyBuilder()
-                    .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme‌​)
-                    .RequireAuthenticatedUser().Build());
-            });
 
 builder.Services.AddAuthentication().AddJwtBearer(options =>
 {
@@ -45,6 +38,7 @@ builder.Services.AddCors(options =>
         { 
             policy.WithOrigins("http://localhost:3000")
                 .AllowAnyHeader()
+                .AllowCredentials()
                 .AllowAnyMethod();
         });
 });

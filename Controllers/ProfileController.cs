@@ -4,8 +4,9 @@ using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LearnApi.Models;
-using LearnApi.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace LearnApi.Controllers
@@ -16,11 +17,13 @@ namespace LearnApi.Controllers
     {
         private readonly TodoContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ProfileController(TodoContext context,IConfiguration configuration)
+        public ProfileController(TodoContext context,IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _configuration = configuration;
+            _httpContextAccessor = httpContextAccessor;
         }
         
         private string CreateToken(Profile profile)
@@ -35,7 +38,6 @@ namespace LearnApi.Controllers
                 _configuration.GetSection("AppSettings:Token").Value!));
  
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-            Console.WriteLine("time : "+ DateTime.UtcNow);
  
             var token = new JwtSecurityToken(
                     claims: claims,
@@ -74,7 +76,7 @@ namespace LearnApi.Controllers
         
         [HttpPost]
         [Route("login")]
-        public async Task<IActionResult> Login(ProfileLoginDto profileL)
+        public async Task<IActionResult> Login([FromBody] ProfileLoginDto profileL)
         {
             var profileFound = await _context.Profiles.FirstOrDefaultAsync(p => p.Username == profileL.Username);
 
@@ -86,13 +88,42 @@ namespace LearnApi.Controllers
             if (BCrypt.Net.BCrypt.Verify(profileL.Password, profileFound.Password))
             {
                 string token = CreateToken(profileFound);
-                //Response.Cookies.Append();
+                HttpContext.Response.Cookies.Append("jwt", token,  new CookieOptions()
+                    {
+                        HttpOnly = true,
+                        Expires = DateTimeOffset.Now.AddDays(10),
+                        IsEssential = true,
+                        SameSite = SameSiteMode.None ,
+                        Secure = true
+                    });
+                Console.WriteLine("helloeee");
                 return Ok(token);
             }
 
             return BadRequest(new {message = "wrong password!"});
         }
-        
+
+        [HttpPost]
+        [Route("{id:int}/worksheet")]
+        public async Task<ActionResult<Profile>> SaveWorksheet(WorksheetDto worksheetDto,int id)
+        {
+            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.Id == id);
+            if(profile is null)
+            {
+                return BadRequest("Cannot save worksheet without owner!");
+            }
+
+            Worksheet worksheet = new Worksheet(worksheetDto);
+            EntityEntry<Worksheet> savedWorksheet = await _context.Worksheets.AddAsync(worksheet);
+            profile.Worksheets.Add(savedWorksheet.Entity);
+            var result = await _context.SaveChangesAsync();
+            if (result > 0)
+            {
+                return Ok(savedWorksheet.Entity);
+            }
+            return BadRequest();
+        }
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Profile>>> GetProfiles()
         {

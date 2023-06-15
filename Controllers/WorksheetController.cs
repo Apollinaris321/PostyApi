@@ -83,6 +83,7 @@ namespace LearnApi.Controllers
         // POST: api/Worksheet
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Route("/")]
         public async Task<ActionResult<Worksheet>> PostWorksheet(Worksheet worksheet)
         {
           if (_context.Worksheets == null)
@@ -96,10 +97,10 @@ namespace LearnApi.Controllers
               Console.WriteLine($"hello i found user ; {owner.Worksheets.Count}");
               owner?.Worksheets.Add(worksheet);
           }
-            _context.Worksheets.Add(worksheet);
-            await _context.SaveChangesAsync();
+          _context.Worksheets.Add(worksheet);
+          await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetWorksheet", new { id = worksheet.Id }, worksheet);
+          return CreatedAtAction("GetWorksheet", new { id = worksheet.Id }, worksheet);
         }
 
         // DELETE: api/Worksheet/5
