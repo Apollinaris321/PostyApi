@@ -51,13 +51,18 @@ namespace LearnApi.Controllers
         }
 
         [HttpGet]
-        //[Authorize]
         [Authorize(Roles="User")]
         [Route("getmyname")]
-        public IActionResult GetMyName()
+        public IActionResult GetMyProfile()
         {
             var name = HttpContext.User.FindFirstValue(ClaimTypes.Name);
-            return Ok(name);
+            var profile = _context.Profiles.FirstOrDefaultAsync(p => p.Username == name);
+
+            if (profile.Result == null)
+            {
+                return NotFound("No Profile with this username found!");
+            }
+            return Ok(profile.Result);
         }
 
         [HttpPost("logout")]
