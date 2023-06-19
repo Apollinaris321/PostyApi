@@ -56,7 +56,7 @@ namespace LearnApi.Controllers
         public IActionResult GetMyProfile()
         {
             var name = HttpContext.User.FindFirstValue(ClaimTypes.Name);
-            var profile = _context.Profiles.FirstOrDefaultAsync(p => p.Username == name);
+            var profile = _context.Profiles.Include(p => p.Worksheets).FirstOrDefaultAsync(p => p.Username == name);
 
             if (profile.Result == null)
             {
@@ -65,11 +65,12 @@ namespace LearnApi.Controllers
             return Ok(profile.Result);
         }
 
-        [HttpPost("logout")]
+        [Authorize]
+        [HttpGet("logout")]
         public IActionResult Logout()
         {
             Response.Cookies.Delete("jwt");
-            return Ok(new { message = "success" });
+            return Ok(new { message = "log out successful!" });
         }
 
         [HttpPost]
@@ -100,7 +101,7 @@ namespace LearnApi.Controllers
         [Route("login")]
         public async Task<IActionResult> Login([FromBody] ProfileLoginDto profileL)
         {
-            var profileFound = await _context.Profiles.FirstOrDefaultAsync(p => p.Username == profileL.Username);
+            var profileFound = await _context.Profiles.Include(p => p.Worksheets).FirstOrDefaultAsync(p => p.Username == profileL.Username);
 
             if (profileFound == null)
             {
@@ -118,20 +119,21 @@ namespace LearnApi.Controllers
                         SameSite = SameSiteMode.None ,
                         Secure = true
                     });
-                return Ok(token);
+                return Ok(new {data = profileFound});
             }
 
             return BadRequest(new {message = "wrong password!"});
         }
 
         [HttpPost]
-        [Route("{id:int}/worksheet")]
-        public async Task<ActionResult<Profile>> SaveWorksheet(WorksheetDto worksheetDto,int id)
+        [Route("{id}/worksheet")]
+        public async Task<ActionResult> SaveWorksheet([FromBody]WorksheetDto worksheetDto,int id)
         {
+            Console.WriteLine("received worksheet");
             var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.Id == id);
             if(profile is null)
             {
-                return BadRequest("Cannot save worksheet without owner!");
+                return BadRequest(new {message = "failed to find profile!"});
             }
 
             Worksheet worksheet = new Worksheet(worksheetDto);
@@ -142,7 +144,7 @@ namespace LearnApi.Controllers
             {
                 return Ok(savedWorksheet.Entity);
             }
-            return BadRequest();
+            return BadRequest(new {message = "failed to save worksheet!"});
         }
 
         [HttpGet]
