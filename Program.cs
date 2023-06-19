@@ -1,32 +1,33 @@
 using System.Text;
 using LearnApi.Models;
 using LearnApi.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
-using SameSiteMode = Microsoft.AspNetCore.Http.SameSiteMode;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(
+        policy =>
+        { 
+            policy.WithOrigins("http://localhost:3000")
+                .AllowAnyHeader()
+                .AllowCredentials()
+                .AllowAnyMethod();
+        });
+});
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<TodoContext>(opt =>
     opt.UseInMemoryDatabase("TodoList"));
 
-builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultScheme = "JWT_OR_COOKIE";
-        options.DefaultChallengeScheme = "JWT_OR_COOKIE";
-
-    })
-    .AddCookie()
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -39,30 +40,17 @@ builder.Services.AddAuthentication(options =>
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
                 builder.Configuration.GetSection("AppSettings:Token").Value!))
         };
-    })
-    .AddPolicyScheme("JWT_OR_COOKIE", "JWT_OR_COOKIE", options =>
-    {
-        options.ForwardDefaultSelector = context =>
+        options.Events = new JwtBearerEvents
         {
-            string authorization = context.Request.Headers[HeaderNames.Authorization];
-            if (!string.IsNullOrEmpty(authorization) && authorization.StartsWith("Bearer "))
-                return JwtBearerDefaults.AuthenticationScheme;
-
-            return CookieAuthenticationDefaults.AuthenticationScheme;
+            OnMessageReceived = context =>
+            {
+                context.Token = context.Request.Cookies["jwt"];
+                return Task.CompletedTask;
+            }
         };
     });
 
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(
-        policy =>
-        { 
-            policy.WithOrigins("http://localhost:3000")
-                .AllowAnyHeader()
-                .AllowCredentials()
-                .AllowAnyMethod();
-        });
-});
+builder.Services.AddAuthorization();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -119,10 +107,6 @@ if (app.Environment.IsDevelopment())
 app.UseCors();
 app.UseHttpsRedirection();
 
-app.UseCookiePolicy(new CookiePolicyOptions()
-{
-    MinimumSameSitePolicy = SameSiteMode.None
-});
 app.UseAuthentication();
 app.UseAuthorization( );
 

@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LearnApi.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Options;
@@ -30,7 +31,6 @@ namespace LearnApi.Controllers
         {
             List<Claim> claims = new List<Claim> {
                 new Claim(ClaimTypes.Name, profile.Username),
-                new Claim(ClaimTypes.Role, "Admin"),
                 new Claim(ClaimTypes.Role, "User"),
             };
  
@@ -41,14 +41,31 @@ namespace LearnApi.Controllers
  
             var token = new JwtSecurityToken(
                     claims: claims,
-                    expires: DateTime.UtcNow.AddSeconds(30),
+                    expires: DateTime.UtcNow.AddDays(1),
                     signingCredentials: creds
                 );
  
             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
  
             return jwt;
-        }       
+        }
+
+        [HttpGet]
+        //[Authorize]
+        [Authorize(Roles="User")]
+        [Route("getmyname")]
+        public IActionResult GetMyName()
+        {
+            var name = HttpContext.User.FindFirstValue(ClaimTypes.Name);
+            return Ok(name);
+        }
+
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            Response.Cookies.Delete("jwt");
+            return Ok(new { message = "success" });
+        }
 
         [HttpPost]
         [Route("register")]
@@ -88,7 +105,7 @@ namespace LearnApi.Controllers
             if (BCrypt.Net.BCrypt.Verify(profileL.Password, profileFound.Password))
             {
                 string token = CreateToken(profileFound);
-                HttpContext.Response.Cookies.Append("jwt", token,  new CookieOptions()
+                Response.Cookies.Append("jwt", token,  new CookieOptions()
                     {
                         HttpOnly = true,
                         Expires = DateTimeOffset.Now.AddDays(10),
@@ -96,7 +113,6 @@ namespace LearnApi.Controllers
                         SameSite = SameSiteMode.None ,
                         Secure = true
                     });
-                Console.WriteLine("helloeee");
                 return Ok(token);
             }
 
@@ -130,7 +146,6 @@ namespace LearnApi.Controllers
             return await _context.Profiles.Include(p => p.Worksheets).ToListAsync();
         }
 
-        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<Profile>> GetProfile(long id)
         {
@@ -146,8 +161,6 @@ namespace LearnApi.Controllers
           return profile;
         }
 
-        // PUT: api/Profile/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutProfile(long id, Profile profile)
         {
