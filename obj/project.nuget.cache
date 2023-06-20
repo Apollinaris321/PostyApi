@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Nqjw0eRrOpCauBv/I0rmo3o4xgr/YbBLvo3oU1K4r/8d9z38FMNn3boymj3a8tqbTB1C1I12ZGW5GauZU0b82w==",
+  "dgSpecHash": "SGgBDgH74XABQ7HwRbMCBtTv3iVQ0VIp/6nRzz02J1YgZcABS6Uy/uuOUk7Sk/786+WWmYMwpBGXaPAEDufpMQ==",
   "success": true,
-  "projectFilePath": "C:\\Users\\blura\\RiderProjects\\LearnApi\\LearnApi.csproj",
+  "projectFilePath": "C:\\Users\\blura\\Desktop\\MathServer\\LearnApi.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\blura\\.nuget\\packages\\azure.core\\1.24.0\\azure.core.1.24.0.nupkg.sha512",
     "C:\\Users\\blura\\.nuget\\packages\\azure.identity\\1.6.0\\azure.identity.1.6.0.nupkg.sha512",
