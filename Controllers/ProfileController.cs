@@ -69,7 +69,12 @@ namespace LearnApi.Controllers
         [HttpGet("logout")]
         public IActionResult Logout()
         {
-            Response.Cookies.Delete("jwt");
+            Response.Cookies.Delete("jwt", new CookieOptions 
+                        {
+                            HttpOnly = true,
+                            SameSite = SameSiteMode.None,
+                            Secure = true
+                        });
             return Ok(new { message = "log out successful!" });
         }
 
@@ -119,7 +124,7 @@ namespace LearnApi.Controllers
                         SameSite = SameSiteMode.None ,
                         Secure = true
                     });
-                return Ok(new {data = profileFound});
+                return Ok(profileFound);
             }
 
             return BadRequest(new {message = "wrong password!"});

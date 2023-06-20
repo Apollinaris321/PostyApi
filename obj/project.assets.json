@@ -12356,11 +12356,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\blura\\Desktop\\MathServer\\LearnApi.csproj",
+      "projectUniqueName": "C:\\Users\\blura\\RiderProjects\\LearnApi\\LearnApi.csproj",
       "projectName": "LearnApi",
-      "projectPath": "C:\\Users\\blura\\Desktop\\MathServer\\LearnApi.csproj",
+      "projectPath": "C:\\Users\\blura\\RiderProjects\\LearnApi\\LearnApi.csproj",
       "packagesPath": "C:\\Users\\blura\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\blura\\Desktop\\MathServer\\obj\\",
+      "outputPath": "C:\\Users\\blura\\RiderProjects\\LearnApi\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\blura\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -12457,7 +12457,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.202\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.203\\RuntimeIdentifierGraph.json"
       }
     }
   }
