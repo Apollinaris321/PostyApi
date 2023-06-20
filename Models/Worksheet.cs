@@ -10,10 +10,11 @@ public class Worksheet
     public Worksheet()
     {
     }
-    
-    public Worksheet(WorksheetDto worksheetDto)
+
+    public Worksheet(string _title, string _exercises, long _profileId)
     {
-        Title = worksheetDto.Title;
-        Exercises = worksheetDto.Exercises;
+        Title = _title;
+        Exercises = _exercises;
+        ProfileId = _profileId;
     }
 }

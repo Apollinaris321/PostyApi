@@ -11,6 +11,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddScoped<JwtService>();
+
+builder.Services.AddHttpLogging(logging =>
+{
+    logging.RequestBodyLogLimit = 4096;
+    logging.ResponseBodyLogLimit = 4096;
+
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(
@@ -102,6 +110,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseHttpLogging();
 }
 
 app.UseCors();

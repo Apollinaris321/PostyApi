@@ -12,9 +12,6 @@ public class TodoContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // modelBuilder.Entity<Profile>()
-        //     .Property(p => p.Username)
-        //     .IsRequired();
         base.OnModelCreating(modelBuilder);
          
         modelBuilder.Entity<Profile>()
@@ -58,7 +55,6 @@ public class TodoContext : DbContext
         base.OnModelCreating(modelBuilder);
     }
     
-    public DbSet<TodoItem> TodoItems { get; set; } = null!;
     public DbSet<Profile> Profiles { get; set; } = null!;
     public DbSet<Worksheet> Worksheets { get; set; } = null!;
 }

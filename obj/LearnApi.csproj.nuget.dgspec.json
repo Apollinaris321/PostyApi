@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\blura\\RiderProjects\\LearnApi\\LearnApi.csproj": {}
+    "C:\\Users\\blura\\Desktop\\MathServer\\LearnApi.csproj": {}
   },
   "projects": {
-    "C:\\Users\\blura\\RiderProjects\\LearnApi\\LearnApi.csproj": {
+    "C:\\Users\\blura\\Desktop\\MathServer\\LearnApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\blura\\RiderProjects\\LearnApi\\LearnApi.csproj",
+        "projectUniqueName": "C:\\Users\\blura\\Desktop\\MathServer\\LearnApi.csproj",
         "projectName": "LearnApi",
-        "projectPath": "C:\\Users\\blura\\RiderProjects\\LearnApi\\LearnApi.csproj",
+        "projectPath": "C:\\Users\\blura\\Desktop\\MathServer\\LearnApi.csproj",
         "packagesPath": "C:\\Users\\blura\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\blura\\RiderProjects\\LearnApi\\obj\\",
+        "outputPath": "C:\\Users\\blura\\Desktop\\MathServer\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\blura\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -44,7 +44,7 @@
             },
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
-              "version": "[7.0.5, )"
+              "version": "[7.0.7, )"
             },
             "Microsoft.AspNetCore.Identity": {
               "target": "Package",
@@ -52,11 +52,11 @@
             },
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[7.0.5, )"
+              "version": "[7.0.7, )"
             },
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
-              "version": "[7.0.5, )"
+              "version": "[7.0.7, )"
             },
             "Microsoft.EntityFrameworkCore.InMemory": {
               "target": "Package",
@@ -64,17 +64,17 @@
             },
             "Microsoft.EntityFrameworkCore.SqlServer": {
               "target": "Package",
-              "version": "[7.0.5, )"
+              "version": "[7.0.7, )"
             },
             "Microsoft.EntityFrameworkCore.Sqlite": {
               "target": "Package",
-              "version": "[7.0.5, )"
+              "version": "[7.0.7, )"
             },
             "Microsoft.EntityFrameworkCore.Tools": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[7.0.5, )"
+              "version": "[7.0.7, )"
             },
             "Microsoft.Extensions.Configuration.Binder": {
               "target": "Package",
@@ -82,11 +82,11 @@
             },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
-              "version": "[7.0.6, )"
+              "version": "[7.0.7, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
-              "version": "[6.4.0, )"
+              "version": "[6.5.0, )"
             }
           },
           "imports": [
@@ -108,7 +108,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.203\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.202\\RuntimeIdentifierGraph.json"
         }
       }
     }

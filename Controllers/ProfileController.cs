@@ -4,10 +4,9 @@ using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LearnApi.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace LearnApi.Controllers
@@ -18,13 +17,11 @@ namespace LearnApi.Controllers
     {
         private readonly TodoContext _context;
         private readonly IConfiguration _configuration;
-        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ProfileController(TodoContext context,IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
+        public ProfileController(TodoContext context,IConfiguration configuration)
         {
             _context = context;
             _configuration = configuration;
-            _httpContextAccessor = httpContextAccessor;
         }
         
         private string CreateToken(Profile profile)
@@ -78,22 +75,23 @@ namespace LearnApi.Controllers
             return Ok(new { message = "log out successful!" });
         }
 
+
         [HttpPost]
         [Route("register")]
-        public async Task<IActionResult> Register(ProfileRegisterDto profileR)
+        public async Task<ActionResult<ProfileDto>> Register(ProfileDto pDto)//string username,string email = "e",string password = "e")
         {
             var result =
                 await _context.Profiles.FirstOrDefaultAsync(p =>
-                    p.Username == profileR.Username || p.Email == profileR.Email);
+                    p.Username == pDto.Username || p.Email == pDto.Email);
             
             if (result != null)
             {
                 return Conflict("User already exists!");
             }
 
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(profileR.Password);
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(pDto.Password);
 
-            var newProfile = new Profile(profileR);
+            var newProfile = new Profile(pDto.Username, pDto.Email, pDto.Password);
             newProfile.Password = passwordHash;
 
             _context.Profiles.Add(newProfile);
@@ -104,16 +102,16 @@ namespace LearnApi.Controllers
         
         [HttpPost]
         [Route("login")]
-        public async Task<IActionResult> Login([FromBody] ProfileLoginDto profileL)
+        public async Task<IActionResult> Login(string username, string password)
         {
-            var profileFound = await _context.Profiles.Include(p => p.Worksheets).FirstOrDefaultAsync(p => p.Username == profileL.Username);
+            var profileFound = await _context.Profiles.Include(p => p.Worksheets).FirstOrDefaultAsync(p => p.Username == username);
 
             if (profileFound == null)
             {
                 return NotFound();
             }
 
-            if (BCrypt.Net.BCrypt.Verify(profileL.Password, profileFound.Password))
+            if (BCrypt.Net.BCrypt.Verify(password, profileFound.Password))
             {
                 string token = CreateToken(profileFound);
                 Response.Cookies.Append("jwt", token,  new CookieOptions()
@@ -127,21 +125,21 @@ namespace LearnApi.Controllers
                 return Ok(profileFound);
             }
 
-            return BadRequest(new {message = "wrong password!"});
+            return BadRequest("wrong password!");
         }
 
-        [HttpPost]
+        [HttpPut]
         [Route("{id}/worksheet")]
-        public async Task<ActionResult> SaveWorksheet([FromBody]WorksheetDto worksheetDto,int id)
+        public async Task<ActionResult> SaveWorksheet(long? id, string _title, string _exercises)
         {
-            Console.WriteLine("received worksheet");
-            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.Id == id);
+            var username = HttpContext.User.FindFirstValue(ClaimTypes.Name); 
+            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.Username == username);
             if(profile is null)
             {
                 return BadRequest(new {message = "failed to find profile!"});
             }
 
-            Worksheet worksheet = new Worksheet(worksheetDto);
+            Worksheet worksheet = new Worksheet(_title, _exercises, profile.Id);
             EntityEntry<Worksheet> savedWorksheet = await _context.Worksheets.AddAsync(worksheet);
             profile.Worksheets.Add(savedWorksheet.Entity);
             var result = await _context.SaveChangesAsync();
@@ -149,13 +147,7 @@ namespace LearnApi.Controllers
             {
                 return Ok(savedWorksheet.Entity);
             }
-            return BadRequest(new {message = "failed to save worksheet!"});
-        }
-
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Profile>>> GetProfiles()
-        {
-            return await _context.Profiles.Include(p => p.Worksheets).ToListAsync();
+            return BadRequest("failed to save worksheet!");
         }
 
         [HttpGet("{id}")]
@@ -201,22 +193,22 @@ namespace LearnApi.Controllers
 
             return NoContent();
         }
+        
+        
+        //////////////////////
 
-        // POST: api/Profile
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Profile>>> GetProfiles()
+        {
+            return await _context.Profiles.Include(p => p.Worksheets).ToListAsync();
+        }
+        
         [HttpPost]
         public async Task<ActionResult<Profile>> PostProfile(Profile profile)
         {
-            //_context.Profiles.Add(profile);
-            // var newProfile = await _userManager.CreateAsync(
-            //     new IdentityUser() { UserName = profile.Username, Email = profile.Email }, profile.Password
-            // );
-            
-            //return CreatedAtAction("GetProfile", newProfile);
             return Ok();
         }
 
-        // DELETE: api/Profile/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProfile(long id)
         {
