@@ -28,7 +28,9 @@ namespace LearnApi.Controllers
         {
             List<Claim> claims = new List<Claim> {
                 new Claim(ClaimTypes.Name, profile.Username),
-                new Claim(ClaimTypes.Role, "User"),
+                new Claim("ProfileId", profile.Id.ToString()),
+                new Claim(ClaimTypes.Email, profile.Email),
+                new Claim(ClaimTypes.Role, "User")
             };
  
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
@@ -96,22 +98,31 @@ namespace LearnApi.Controllers
 
             _context.Profiles.Add(newProfile);
             await _context.SaveChangesAsync();
-
+            
+            string token = CreateToken(newProfile);
+            Response.Cookies.Append("jwt", token,  new CookieOptions()
+                {
+                    HttpOnly = true,
+                    Expires = DateTimeOffset.Now.AddDays(10),
+                    IsEssential = true,
+                    SameSite = SameSiteMode.None ,
+                    Secure = true
+                });
             return Ok(newProfile);
         }
         
         [HttpPost]
         [Route("login")]
-        public async Task<IActionResult> Login(string username, string password)
+        public async Task<IActionResult> Login(LoginDto loginDto)
         {
-            var profileFound = await _context.Profiles.Include(p => p.Worksheets).FirstOrDefaultAsync(p => p.Username == username);
+            var profileFound = await _context.Profiles.Include(p => p.Worksheets).FirstOrDefaultAsync(p => p.Username == loginDto.Username);
 
             if (profileFound == null)
             {
                 return NotFound();
             }
 
-            if (BCrypt.Net.BCrypt.Verify(password, profileFound.Password))
+            if (BCrypt.Net.BCrypt.Verify(loginDto.Password, profileFound.Password))
             {
                 string token = CreateToken(profileFound);
                 Response.Cookies.Append("jwt", token,  new CookieOptions()
@@ -129,8 +140,68 @@ namespace LearnApi.Controllers
         }
 
         [HttpPut]
+        [Authorize]
+        [Route("{id}/worksheet/{worksheetId}")]
+        public async Task<ActionResult> PutWorksheet(long id,long worksheetId, Worksheet worksheet)
+        {
+            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
+            if(id != profileId)
+            {
+                return Unauthorized("Cannot access other users data!");
+            }
+            Worksheet? oldWorksheet = await _context.Worksheets.FirstOrDefaultAsync(w => w.ProfileId == profileId && w.Id == worksheetId);
+            EntityEntry<Worksheet> newWorksheet = null;
+            if (oldWorksheet is null)
+            {
+                newWorksheet = await _context.Worksheets.AddAsync(worksheet);
+                await _context.SaveChangesAsync();
+                return Ok(newWorksheet.Entity);
+            }
+            _context.Worksheets.Remove(oldWorksheet);
+            newWorksheet = await _context.Worksheets.AddAsync(worksheet);
+            await _context.SaveChangesAsync();
+            return Ok(newWorksheet.Entity);
+        }
+ 
+        [HttpDelete]
+        [Authorize]
+        [Route("{id}/worksheet/{worksheetId}")]
+        public async Task<ActionResult> DeleteWorksheet(long id,long worksheetId)
+        {
+            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
+            if(id != profileId)
+            {
+                return Unauthorized("Cannot access other users data!");
+            }
+            
+            Worksheet? worksheet = await _context.Worksheets.FirstOrDefaultAsync(w => w.ProfileId == profileId && w.Id == worksheetId);
+            EntityEntry<Worksheet> newWorksheet = null;
+            if (worksheet is null)
+            {
+                return BadRequest("Worksheet with this id doesn't exist!");
+            }
+            _context.Worksheets.Remove(worksheet);
+            await _context.SaveChangesAsync();
+            return Ok("Successfully removed Worksheet");
+        }       
+        
+        [HttpGet]
+        [Authorize]
         [Route("{id}/worksheet")]
-        public async Task<ActionResult> SaveWorksheet(long? id, string _title, string _exercises)
+        public async Task<ActionResult> GetWorksheet(long? id)
+        {
+            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
+            if(id != profileId)
+            {
+                return Unauthorized("Cannot access other users data!");
+            }
+            List<Worksheet> worksheets = await _context.Worksheets.Where(w => w.ProfileId == profileId).ToListAsync();
+            return Ok(worksheets);
+        }
+        
+        [HttpPut]
+        [Route("{id}/worksheet")]
+        public async Task<ActionResult> SaveWorksheet(long? id,Worksheet worksheetDto)
         {
             var username = HttpContext.User.FindFirstValue(ClaimTypes.Name); 
             var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.Username == username);
@@ -139,8 +210,8 @@ namespace LearnApi.Controllers
                 return BadRequest(new {message = "failed to find profile!"});
             }
 
-            Worksheet worksheet = new Worksheet(_title, _exercises, profile.Id);
-            EntityEntry<Worksheet> savedWorksheet = await _context.Worksheets.AddAsync(worksheet);
+            Worksheet worksheet = new Worksheet(worksheetDto.Title, worksheetDto.Exercises, profile.Id);
+            EntityEntry<Worksheet> savedWorksheet = await _context.Worksheets.AddAsync(worksheetDto);
             profile.Worksheets.Add(savedWorksheet.Entity);
             var result = await _context.SaveChangesAsync();
             if (result > 0)
