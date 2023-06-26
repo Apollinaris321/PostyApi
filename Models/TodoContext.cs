@@ -31,6 +31,14 @@ public class TodoContext : DbContext
                     Email = "aa@mail.com",
                     Worksheets = new List<Worksheet>(),
                     Password = "hallo"
+                },
+                new Profile
+                {
+                    Id = 3,
+                    Username = "string",
+                    Email = "string",
+                    Worksheets = new List<Worksheet>(),
+                    Password = BCrypt.Net.BCrypt.HashPassword("string")
                 }
             );
           

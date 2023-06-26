@@ -77,7 +77,6 @@ namespace LearnApi.Controllers
             return Ok(new { message = "log out successful!" });
         }
 
-
         [HttpPost]
         [Route("register")]
         public async Task<ActionResult<ProfileDto>> Register(ProfileDto pDto)//string username,string email = "e",string password = "e")
