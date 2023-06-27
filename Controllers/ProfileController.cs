@@ -198,7 +198,7 @@ namespace LearnApi.Controllers
             return Ok(worksheets);
         }
         
-        [HttpPut]
+        [HttpPost]
         [Route("{id}/worksheet")]
         public async Task<ActionResult> SaveWorksheet(long? id,Worksheet worksheetDto)
         {
