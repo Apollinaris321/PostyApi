@@ -122,6 +122,43 @@ namespace LearnApi.Controllers
             return Ok(new { message = "log out successful!" });
         }
          
+        [HttpGet]
+        [Authorize]
+        [Route("{id}/worksheet")]
+        public async Task<ActionResult> GetAllWorksheet(long? id)
+        {
+            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
+            if(id != profileId)
+            {
+                return Unauthorized("Cannot access other users data!");
+            }
+            List<Worksheet> worksheets = await _context.Worksheets.Where(w => w.ProfileId == profileId).ToListAsync();
+            return Ok(worksheets);
+        }        
+          
+        [HttpGet]
+        [Authorize]
+        [Route("{id}/worksheet/{worksheetId}")]
+        public async Task<ActionResult> GetWorksheet(long? id,long?  worksheetId)
+        {
+            if (worksheetId == null)
+            {
+                return BadRequest("Worksheet id is null!");
+            }
+            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
+            if(id != profileId)
+            {
+                return Unauthorized("Cannot access other users data!");
+            }
+            Worksheet? worksheet = await _context.Worksheets.FirstOrDefaultAsync(w => w.ProfileId == profileId && w.Id == worksheetId);
+            if (worksheet != null)
+            {
+                return Ok(worksheet);
+            }
+
+            return NotFound($"No worksheet with this id {worksheetId}");
+        }               
+        
         [HttpPut]
         [Authorize]
         [Route("{id}/worksheet/{worksheetId}")]
@@ -170,20 +207,7 @@ namespace LearnApi.Controllers
                 return BadRequest("Could not find your user profile! ");
             }
         }
-        
-        [HttpGet]
-        [Authorize]
-        [Route("{id}/worksheet")]
-        public async Task<ActionResult> GetWorksheet(long? id)
-        {
-            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
-            if(id != profileId)
-            {
-                return Unauthorized("Cannot access other users data!");
-            }
-            List<Worksheet> worksheets = await _context.Worksheets.Where(w => w.ProfileId == profileId).ToListAsync();
-            return Ok(worksheets);
-        }
+
         
         [HttpDelete]
         [Authorize]
@@ -202,6 +226,7 @@ namespace LearnApi.Controllers
             return Ok(tempWorksheet.Id);
         }
         
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<Profile>> GetProfile(long id)
         {
@@ -217,39 +242,16 @@ namespace LearnApi.Controllers
           return profile;
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutProfile(long id, Profile profile)
-        {
-            if (id != profile.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(profile).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ProfileExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-        
- 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProfile(long id)
         {
+            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
+            if (profileId != id)
+            {
+                return Unauthorized($"You can only delete your own profile! userid: {profileId}, paramId: {id}");
+            }
+            
             if (_context.Profiles == null)
             {
                 return NotFound();
@@ -265,23 +267,5 @@ namespace LearnApi.Controllers
 
             return NoContent();
         }       
-
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Profile>>> GetProfiles()
-        {
-            return await _context.Profiles.Include(p => p.Worksheets).ToListAsync();
-        }
-        
-        [HttpPost]
-        public async Task<ActionResult<Profile>> PostProfile(Profile profile)
-        {
-            return Ok();
-        }
-
-
-        private bool ProfileExists(long id)
-        {
-            return (_context.Profiles?.Any(e => e.Id == id)).GetValueOrDefault();
-        }
     }
 }

@@ -1,6 +1,5 @@
 using System.Text;
 using LearnApi.Models;
-using LearnApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -10,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
-builder.Services.AddScoped<JwtService>();
+// builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddHttpLogging(logging =>
 {
