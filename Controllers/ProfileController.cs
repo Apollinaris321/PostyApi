@@ -121,6 +121,28 @@ namespace LearnApi.Controllers
                         });
             return Ok(new { message = "log out successful!" });
         }
+         
+        [HttpPut]
+        [Authorize]
+        [Route("{id}/worksheet/{worksheetId}")]
+        public async Task<ActionResult> PostWorksheet(long id,long worksheetId, Worksheet worksheet)
+        {
+            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
+            if(id != profileId)
+            {
+                return Unauthorized("Cannot access other users data!");
+            }
+
+            if (worksheetId != worksheet.Id)
+            {
+                return BadRequest($"worksheet id's not matching! param: {worksheetId} body: {worksheet.Id} ");
+            }
+
+            var oldWorksheet = await _context.Worksheets.FirstOrDefaultAsync(w => w.Id == worksheet.Id);
+            _context.Entry(oldWorksheet).CurrentValues.SetValues(worksheet);
+            var result = await _context.SaveChangesAsync();
+            return Ok(worksheet);
+        }       
         
         [HttpPost]
         [Authorize]
