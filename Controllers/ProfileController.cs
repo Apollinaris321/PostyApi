@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LearnApi.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.IdentityModel.Tokens;
 
@@ -47,34 +46,6 @@ namespace LearnApi.Controllers
             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
  
             return jwt;
-        }
-
-        [HttpGet]
-        [Authorize(Roles="User")]
-        [Route("getmyname")]
-        public IActionResult GetMyProfile()
-        {
-            var name = HttpContext.User.FindFirstValue(ClaimTypes.Name);
-            var profile = _context.Profiles.Include(p => p.Worksheets).FirstOrDefaultAsync(p => p.Username == name);
-
-            if (profile.Result == null)
-            {
-                return NotFound("No Profile with this username found!");
-            }
-            return Ok(profile.Result);
-        }
-
-        [Authorize]
-        [HttpGet("logout")]
-        public IActionResult Logout()
-        {
-            Response.Cookies.Delete("jwt", new CookieOptions 
-                        {
-                            HttpOnly = true,
-                            SameSite = SameSiteMode.None,
-                            Secure = true
-                        });
-            return Ok(new { message = "log out successful!" });
         }
 
         [HttpPost]
@@ -138,51 +109,45 @@ namespace LearnApi.Controllers
             return BadRequest("wrong password!");
         }
 
-        [HttpPut]
         [Authorize]
-        [Route("{id}/worksheet/{worksheetId}")]
-        public async Task<ActionResult> PutWorksheet(long id,long worksheetId, Worksheet worksheet)
+        [HttpGet("logout")]
+        public IActionResult Logout()
         {
-            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
-            if(id != profileId)
-            {
-                return Unauthorized("Cannot access other users data!");
-            }
-            Worksheet? oldWorksheet = await _context.Worksheets.FirstOrDefaultAsync(w => w.ProfileId == profileId && w.Id == worksheetId);
-            EntityEntry<Worksheet> newWorksheet = null;
-            if (oldWorksheet is null)
-            {
-                newWorksheet = await _context.Worksheets.AddAsync(worksheet);
-                await _context.SaveChangesAsync();
-                return Ok(newWorksheet.Entity);
-            }
-            _context.Worksheets.Remove(oldWorksheet);
-            newWorksheet = await _context.Worksheets.AddAsync(worksheet);
-            await _context.SaveChangesAsync();
-            return Ok(newWorksheet.Entity);
+            Response.Cookies.Delete("jwt", new CookieOptions 
+                        {
+                            HttpOnly = true,
+                            SameSite = SameSiteMode.None,
+                            Secure = true
+                        });
+            return Ok(new { message = "log out successful!" });
         }
- 
-        [HttpDelete]
+        
+        [HttpPost]
         [Authorize]
-        [Route("{id}/worksheet/{worksheetId}")]
-        public async Task<ActionResult> DeleteWorksheet(long id,long worksheetId)
+        [Route("{id}/worksheet")]
+        public async Task<ActionResult> PostWorksheet(long id, WorksheetDto worksheetDto)
         {
             var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
             if(id != profileId)
             {
                 return Unauthorized("Cannot access other users data!");
             }
-            
-            Worksheet? worksheet = await _context.Worksheets.FirstOrDefaultAsync(w => w.ProfileId == profileId && w.Id == worksheetId);
-            EntityEntry<Worksheet> newWorksheet = null;
-            if (worksheet is null)
+
+            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.Id == profileId);
+
+            if (profile != null)
             {
-                return BadRequest("Worksheet with this id doesn't exist!");
+                var newWorksheet = new Worksheet(worksheetDto.Title, worksheetDto.Exercises, worksheetDto.ProfileId);
+                await _context.Worksheets.AddAsync(newWorksheet);
+                profile.Worksheets.Add(newWorksheet);
+                await _context.SaveChangesAsync();
+                return Ok(newWorksheet);
             }
-            _context.Worksheets.Remove(worksheet);
-            await _context.SaveChangesAsync();
-            return Ok("Successfully removed Worksheet");
-        }       
+            else
+            {
+                return BadRequest("Could not find your user profile! ");
+            }
+        }
         
         [HttpGet]
         [Authorize]
@@ -198,28 +163,23 @@ namespace LearnApi.Controllers
             return Ok(worksheets);
         }
         
-        [HttpPost]
-        [Route("{id}/worksheet")]
-        public async Task<ActionResult> SaveWorksheet(long? id,Worksheet worksheetDto)
+        [HttpDelete]
+        [Authorize]
+        [Route("{id}/worksheet/{worksheetId}")]
+        public async Task<ActionResult> DeleteWorksheet(long id, long worksheetId)
         {
-            var username = HttpContext.User.FindFirstValue(ClaimTypes.Name); 
-            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.Username == username);
-            if(profile is null)
+            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
+            if(id != profileId)
             {
-                return BadRequest(new {message = "failed to find profile!"});
+                return Unauthorized("Cannot access other users data!");
             }
 
-            Worksheet worksheet = new Worksheet(worksheetDto.Title, worksheetDto.Exercises, profile.Id);
-            EntityEntry<Worksheet> savedWorksheet = await _context.Worksheets.AddAsync(worksheetDto);
-            profile.Worksheets.Add(savedWorksheet.Entity);
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
-            {
-                return Ok(savedWorksheet.Entity);
-            }
-            return BadRequest("failed to save worksheet!");
+            var tempWorksheet = new Worksheet() { Id = worksheetId };
+            _context.Worksheets.Remove(tempWorksheet);
+            await _context.SaveChangesAsync();
+            return Ok(tempWorksheet.Id);
         }
-
+        
         [HttpGet("{id}")]
         public async Task<ActionResult<Profile>> GetProfile(long id)
         {
@@ -264,21 +224,7 @@ namespace LearnApi.Controllers
             return NoContent();
         }
         
-        
-        //////////////////////
-
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Profile>>> GetProfiles()
-        {
-            return await _context.Profiles.Include(p => p.Worksheets).ToListAsync();
-        }
-        
-        [HttpPost]
-        public async Task<ActionResult<Profile>> PostProfile(Profile profile)
-        {
-            return Ok();
-        }
-
+ 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProfile(long id)
         {
@@ -296,7 +242,20 @@ namespace LearnApi.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }       
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Profile>>> GetProfiles()
+        {
+            return await _context.Profiles.Include(p => p.Worksheets).ToListAsync();
         }
+        
+        [HttpPost]
+        public async Task<ActionResult<Profile>> PostProfile(Profile profile)
+        {
+            return Ok();
+        }
+
 
         private bool ProfileExists(long id)
         {

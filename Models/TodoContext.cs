@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.CodeAnalysis.Elfie.Model;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LearnApi.Models;
 public class TodoContext : DbContext
@@ -8,11 +10,14 @@ public class TodoContext : DbContext
     public TodoContext(DbContextOptions<TodoContext> options)
         : base(options)
     {
+        
     }
-
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        
+        new WorksheetEntityConfiguration().Configure(modelBuilder.Entity<Worksheet>());
          
         modelBuilder.Entity<Profile>()
             .HasData(
@@ -41,25 +46,6 @@ public class TodoContext : DbContext
                     Password = BCrypt.Net.BCrypt.HashPassword("string")
                 }
             );
-          
-        modelBuilder.Entity<Worksheet>()
-            .HasData(
-                new Worksheet()
-                {
-                    Id = 1,
-                    Exercises = "1+1=2",
-                    Title = "my form 1",
-                    ProfileId = null
-                },
-                new Worksheet()
-                {
-                    Id = 2,
-                    Exercises = "1+1=2",
-                    Title = "my form 1",
-                    ProfileId = null
-                }
-            );              
-        
         base.OnModelCreating(modelBuilder);
     }
     

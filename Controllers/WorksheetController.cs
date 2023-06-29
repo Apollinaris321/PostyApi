@@ -80,27 +80,23 @@ namespace LearnApi.Controllers
             return NoContent();
         }
 
-        // POST: api/Worksheet
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        [Route("/")]
-        public async Task<ActionResult<Worksheet>> PostWorksheet(Worksheet worksheet)
+        public async Task<ActionResult<Worksheet>> PostWorksheet(WorksheetDto worksheetDto)
         {
-          if (_context.Worksheets == null)
-          {
-              return Problem("Entity set 'TodoContext.Worksheets'  is null.");
-          }
+            if (worksheetDto.ProfileId != null)
+            {
+                var owner = await _context.Profiles.FirstOrDefaultAsync(p => p.Id == worksheetDto.ProfileId);
+                var newWorksheet = new Worksheet(worksheetDto.Title, worksheetDto.Exercises, worksheetDto.ProfileId );
+                owner?.Worksheets.Add(newWorksheet);
+                _context.Worksheets.Add(newWorksheet);
+                await _context.SaveChangesAsync();
 
-          if (worksheet.ProfileId != null)
-          {
-              var owner = await _context.Profiles.FirstOrDefaultAsync(p => p.Id == worksheet.ProfileId);
-              Console.WriteLine($"hello i found user ; {owner.Worksheets.Count}");
-              owner?.Worksheets.Add(worksheet);
-          }
-          _context.Worksheets.Add(worksheet);
-          await _context.SaveChangesAsync();
-
-          return CreatedAtAction("GetWorksheet", new { id = worksheet.Id }, worksheet);
+                return CreatedAtAction("GetWorksheet",  newWorksheet);
+            }
+            else
+            {
+                return BadRequest("ProfileId is missing!");
+            }
         }
 
         // DELETE: api/Worksheet/5
