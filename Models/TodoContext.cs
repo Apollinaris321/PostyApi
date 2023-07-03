@@ -18,6 +18,38 @@ public class TodoContext : DbContext
         base.OnModelCreating(modelBuilder);
         
         new WorksheetEntityConfiguration().Configure(modelBuilder.Entity<Worksheet>());
+
+        // modelBuilder.Entity<Profile>()
+        //     .HasMany(profile => profile.Posts)
+        //     .WithOne(post => post.Profile)
+        //     .OnDelete(DeleteBehavior.Cascade);
+
+        // modelBuilder.Entity<Post>()
+        //     .HasOne(post => post.Profile)
+        //     .WithMany(profile => profile.Posts)
+        //     .HasForeignKey(post => post.ProfileId)
+        //     .OnDelete(DeleteBehavior.Restrict);
+
+        // modelBuilder.Entity<Profile>()
+        //     .HasMany(profile => profile.Comments)
+        //     .WithOne(comment => comment.Profile)
+        //     .OnDelete(DeleteBehavior.Cascade);
+
+        // modelBuilder.Entity<Comment>()
+        //     .HasOne(comment => comment.Profile)
+        //     .WithMany(profile => profile.Comments)
+        //     .HasForeignKey(comment => comment.ProfileId)
+        //     .OnDelete(DeleteBehavior.Restrict);
+
+        // modelBuilder.Entity<Post>()
+        //     .HasMany(post => post.Comments)
+        //     .WithOne(comment => comment.Post)
+        //     .OnDelete(DeleteBehavior.Cascade);
+
+        // modelBuilder.Entity<Comment>()
+        //     .HasOne(comment => comment.Post)
+        //     .WithMany(post => post.Comments)
+        //     .HasForeignKey(comment => comment.PostId);
          
         modelBuilder.Entity<Profile>()
             .HasData(
@@ -27,28 +59,51 @@ public class TodoContext : DbContext
                     Username = "John Doe",
                     Email = "aa@mail.com",
                     Worksheets = new List<Worksheet>(),
+                    Posts = new List<Post>(),
                     Password = "hallo"                   
-                },
-                new Profile
+                }
+            );
+
+        modelBuilder.Entity<Post>()
+            .HasData(
+                new Post
                 {
-                    Id = 2,
-                    Username = "anni pa",
-                    Email = "aa@mail.com",
-                    Worksheets = new List<Worksheet>(),
-                    Password = "hallo"
-                },
-                new Profile
+                    Id = 1,
+                    ProfileId = 1,
+                    Text = "first post",
+                    Likes = 0,
+                    Comments = new List<Comment>()
+                }
+            );
+
+        modelBuilder.Entity<Comment>()
+            .HasData(
+                new Comment
                 {
-                    Id = 3,
-                    Username = "string",
-                    Email = "string",
-                    Worksheets = new List<Worksheet>(),
-                    Password = BCrypt.Net.BCrypt.HashPassword("string")
+                    Id = 1,
+                    ProfileId = 1,
+                    PostId = 1,
+                    Likes = 1,
+                    Text = "first comment"
+                }
+            );
+
+        modelBuilder.Entity<CommentLike>()
+            .HasData(
+                new CommentLike
+                {
+                    Id = 1,
+                    ProfileId = 1,
+                    CommentId = 1
                 }
             );
         base.OnModelCreating(modelBuilder);
     }
     
+    public DbSet<CommentLike> CommentLikes { get; set; } = null!;
+    public DbSet<PostLike> Likes { get; set; } = null!;
     public DbSet<Profile> Profiles { get; set; } = null!;
+    public DbSet<Post> Posts { get; set; } = null!;
+    public DbSet<Comment> Comments { get; set; } = null!;
     public DbSet<Worksheet> Worksheets { get; set; } = null!;
 }
