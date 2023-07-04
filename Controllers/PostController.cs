@@ -56,7 +56,7 @@ public class PostController :ControllerBase
     [Route("{postId}/likes")]
     public async Task<IActionResult> GetLikes(long postId)
     {
-        var likes = await _context.Likes.Include(like => like.Profile).Where(like => like.PostId == postId).ToListAsync();
+        var likes = await _context.PostLikes.Include(like => like.Profile).Where(like => like.PostId == postId).ToListAsync();
         return Ok(likes);
     }            
     
@@ -64,13 +64,13 @@ public class PostController :ControllerBase
     [Route("{postId}/likes")]
     public async Task<IActionResult> Dislike(long postId,long profileId)
     {
-        var like = await _context.Likes.Include(like => like.Post).SingleOrDefaultAsync(like => like.ProfileId == profileId && like.PostId == postId);
+        var like = await _context.PostLikes.Include(like => like.Post).SingleOrDefaultAsync(like => like.ProfileId == profileId && like.PostId == postId);
         if (like == null)
         {
             return BadRequest($"Postlike with id: {postId} doesn't exist! User id : {profileId} doesn't exist");
         }
 
-        _context.Likes.Remove(like);
+        _context.PostLikes.Remove(like);
         _context.Entry(like.Post).CurrentValues.SetValues(new {Likes = like.Post.Likes - 1});
         await _context.SaveChangesAsync();
         return Ok();
@@ -101,7 +101,7 @@ public class PostController :ControllerBase
 
         try
         {
-            await _context.Likes.AddAsync(newLike);
+            await _context.PostLikes.AddAsync(newLike);
             _context.Entry(post).CurrentValues.SetValues(new {Likes = post.Likes + 1});
             await _context.SaveChangesAsync();
             return Ok(post);           

@@ -48,243 +48,25 @@ namespace LearnApi.Controllers
  
             return jwt;
         }
-
+        
         [HttpGet]
-        [Route("/commentLikes")]
-        public async Task<IActionResult> getCommentLikes()
+        public async Task<IActionResult> GetAllProfiles()
         {
-            return Ok(await _context.CommentLikes.ToListAsync());
-        }
-
-        [HttpPost]
-        // das ist doch bescheuert. eigentlich müsste es pId/post/cId/comment sein oder so
-        [Route("{profileId}/profile/{commentId}/comment")]
-        public async Task<IActionResult> likeComment(long profileId, long commentId)
-        {
-            var comment = await _context.Comments.SingleOrDefaultAsync(c => c.Id == commentId);
-            var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.Id == profileId);
-
-            if (comment == null || profile == null)
-            {
-                return BadRequest("Comment or profile doesn't exist!");
-            }
-
-            var newLike = new CommentLike
-            {
-                Comment = comment,
-                Profile = profile
-            };
-
-            _context.CommentLikes.Add(newLike);
-            await _context.SaveChangesAsync();
-            return Ok(newLike);
-        }
-
-        [HttpDelete]
-        [Route("{profileId}/profile/{commentId}/commentlike")]
-        public async Task<IActionResult> deleteCommentLike(long profileId, long commentId)
-        {
-            var like = await _context.CommentLikes.SingleOrDefaultAsync(c =>
-                c.ProfileId == profileId && c.CommentId == commentId);
-            if (like == null)
-            {
-                return BadRequest("You didn't like this comment!");
-            }
-
-            var comment = await _context.Comments.SingleOrDefaultAsync(c => c.Id == commentId);
-            if (comment == null)
-            {
-                return BadRequest("Comment doesn't exist");
-            }
-            comment.Likes--;
-            _context.CommentLikes.Remove(like);
-            await _context.SaveChangesAsync();
-            return Ok();
-        }
-
-        [HttpPost]
-        [Route("{profileId}/profile/{postId}/post/like")]
-        public async Task<IActionResult> postLike(long profileId, long postId)
-        {
-            var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.Id == profileId);
-            var post = await _context.Posts.SingleOrDefaultAsync(p => p.Id == postId);
-            if (profile == null || post == null)
-            {
-                return BadRequest("User or post doesn't exist!");
-            }
-            
-            var newLike = new PostLike
-            {
-                Profile = profile,
-                Post = post,
-            };
-            await _context.Likes.AddAsync(newLike);
-            profile.LikedPosts.Add(newLike);
-            post.ProfileLikes.Add(newLike);
-            await _context.SaveChangesAsync();
-            
-            return Ok(newLike);
-        }
-
-        [HttpDelete]
-        [Route("{profileId}/profile/{postId}/post/like")]
-        public async Task<IActionResult> deleteLike(long postId,long profileId)
-        {
-            var result = await _context.Likes.SingleOrDefaultAsync(l => l.ProfileId == profileId && l.PostId == postId);
-            if (result == null)
-            {
-                return BadRequest("You didnt like this post!");
-            }
-
-            _context.Likes.Remove(result);
-            await _context.SaveChangesAsync();
-            return Ok();
+            var profileList = await _context.Profiles.ToListAsync();
+            var username = HttpContext.Session.GetString("username");
+            var id = HttpContext.Session.GetInt32("id");
+            Console.WriteLine($"username: {username}, id: {id}");
+            return Ok(new{list = profileList, username = username, id = id});
         }
 
         [HttpGet]
-        [Route("/post/like")]
-        public async Task<IActionResult> getLikes()
-        {
-            return Ok(await _context.Likes.Include(l => l.Profile).Include(l => l.Post).ToListAsync());
-        }
-
-        [HttpDelete]
-        [Route("{postId}/post/{commentId}/comment")]
-        public async Task<IActionResult> DeleteComment(long postId, long commentId)
-        {
-            var comment = await _context.Comments.SingleOrDefaultAsync(c => c.PostId == postId && c.Id == commentId);
-            if (comment == null)
-            {
-                return BadRequest("Comment doesnt exist");
-            }
-            _context.Comments.Remove(comment);
-            await _context.SaveChangesAsync();
-            return Ok();
-        }
-
-        [HttpGet]
-        [Route("{id}/profile/comments")]
+        [Route("{id}/comments")]
         public async Task<IActionResult> GetProfileComments(long id)
         {
             var comments = await _context.Comments.Include(c => c.Profile).Include(c => c.Post).Where(c => c.ProfileId == id).ToListAsync();
             return Ok(comments);
         }
         
-        [HttpGet]
-        [Route("{id}/post/comments")]
-        public async Task<IActionResult> GetPostComments(long id)
-        {
-            var comments = await _context.Comments.Where(c => c.PostId == id).ToListAsync();
-            return Ok(comments);
-        }
-        
-        [HttpGet]
-        [Route("/comments")]
-        public async Task<IActionResult> GetComments()
-        {
-            var comments = await _context.Comments.Include(c => c.Profile).Include(c => c.Post).ToListAsync();
-            return Ok(comments);
-        }
-        
-        // I need a post controller for this : {id}/post/comments
-        [HttpPost]
-        [Route("{postId}/post/comments")]
-        public async Task<IActionResult> AddComment(long? postId, long profileId, string text)
-        {
-            if (postId == null)
-            {
-                return BadRequest("empty postId");
-            }
-
-            var post = await _context.Posts.SingleOrDefaultAsync(p => p.Id == postId);
-            var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.Id == profileId);
-
-            if (post == null || profile == null)
-            {
-                return BadRequest("Post or Profile doesn't exist!");
-            }
-            
-            var comment = new Comment
-            {
-                Post = post,
-                Text = text,
-                Profile = profile 
-            };
-            
-            await _context.Comments.AddAsync(comment);
-            await _context.SaveChangesAsync();
-            return Ok(comment);
-        }
-
-        [HttpDelete]
-        [Route("{profileId}/post/{postId}")]
-        public async Task<IActionResult> DeletePost(long? profileId, long? postId)
-        {
-            if (profileId == null || postId == null)
-            {
-                return BadRequest("No id's provided!");
-            }
-            var post = await _context.Posts.SingleOrDefaultAsync(p => p.Id == postId);
-            if (post == null)
-            {
-                return BadRequest("This post doesn't exist!");
-            }
-
-            if (post.ProfileId != profileId)
-            {
-                return Unauthorized("Cannot delete other peoples posts!");
-            }
-            _context.Posts.Remove(post);
-            await _context.SaveChangesAsync();
-            return Ok("success");
-        }
-
-        [HttpPost]
-        [Route("{id}/post")]
-        public async Task<IActionResult> AddPost(long? id, PostDto post)
-        {
-            if (id == null || id != post.ProfileId)
-            {
-                return BadRequest();
-            }
-
-            try
-            {
-                var ownerProfile = await _context.Profiles.FirstOrDefaultAsync(p => p.Id == post.ProfileId);
-                if (ownerProfile == null)
-                {
-                    return BadRequest($"Owner doesn't exist! Owner profileId: {post.ProfileId}");
-                }
-
-                //var newPost = new Post(ownerProfile.Id, post.Text);
-                var newPost = new Post(post.Text, ownerProfile);
-                var postResult = await _context.Posts.AddAsync(newPost);
-                //ownerProfile.Posts.Add(postResult.Entity);
-                await _context.SaveChangesAsync();
-                return Ok(postResult.Entity);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpGet]
-        [Route("allPosts")]
-        public async Task<IActionResult> GetAllPosts()
-        {
-            var postList = await _context.Posts.Include(p => p.Profile).ToListAsync();
-            return Ok(postList);
-        }
-        
-        [HttpGet]
-        [Route("allProfiles")]
-        public async Task<IActionResult> GetAllProfiles()
-        {
-            var profileList = await _context.Profiles.ToListAsync();
-            return Ok(profileList);
-        }
-
         [HttpGet]
         [Route("{id}/posts")]
         public async Task<IActionResult> GetPostsByProfileId(long? id)
@@ -369,6 +151,8 @@ namespace LearnApi.Controllers
                     SameSite = SameSiteMode.None ,
                     Secure = true
                 });
+                HttpContext.Session.SetInt32("id", (int)profileFound.Id);
+                HttpContext.Session.SetString("username", profileFound.Username);
                 return Ok(profileFound);
             }
 
@@ -379,12 +163,14 @@ namespace LearnApi.Controllers
         [HttpGet("logout")]
         public IActionResult Logout()
         {
-            Response.Cookies.Delete("jwt", new CookieOptions 
-            {
-                HttpOnly = true,
-                SameSite = SameSiteMode.None,
-                Secure = true
-            });
+            // Response.Cookies.Delete("jwt", new CookieOptions 
+            // {
+            //     HttpOnly = true,
+            //     SameSite = SameSiteMode.None,
+            //     Secure = true
+            // });
+            HttpContext.Session.Clear();
+            HttpContext.Response.Cookies.Delete("TestApi");
             return Ok(new { message = "log out successful!" });
         }
          

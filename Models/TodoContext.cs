@@ -19,6 +19,9 @@ public class TodoContext : DbContext
         
         new WorksheetEntityConfiguration().Configure(modelBuilder.Entity<Worksheet>());
 
+        modelBuilder.Entity<CommentLike>()
+            .HasKey(cl => new { cl.ProfileId, cl.CommentId });
+         
         modelBuilder.Entity<PostLike>()
             .HasKey(pl => new { pl.ProfileId, pl.PostId });
          
@@ -63,7 +66,6 @@ public class TodoContext : DbContext
             .HasData(
                 new CommentLike
                 {
-                    Id = 1,
                     ProfileId = 1,
                     CommentId = 1
                 }
@@ -72,7 +74,7 @@ public class TodoContext : DbContext
     }
     
     public DbSet<CommentLike> CommentLikes { get; set; } = null!;
-    public DbSet<PostLike> Likes { get; set; } = null!;
+    public DbSet<PostLike> PostLikes { get; set; } = null!;
     public DbSet<Profile> Profiles { get; set; } = null!;
     public DbSet<Post> Posts { get; set; } = null!;
     public DbSet<Comment> Comments { get; set; } = null!;

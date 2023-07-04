@@ -1,5 +1,6 @@
 using System.Text;
 using LearnApi.Models;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -10,6 +11,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 // builder.Services.AddScoped<JwtService>();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.Cookie.Name = "TestApi";
+    options.IdleTimeout = TimeSpan.FromSeconds(200);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 builder.Services.AddHttpLogging(logging =>
 {
@@ -34,28 +43,36 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<TodoContext>(opt =>
     opt.UseInMemoryDatabase("TodoList"));
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            ValidateAudience = false,
-            ValidateIssuer = false,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                builder.Configuration.GetSection("AppSettings:Token").Value!))
-        };
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                context.Token = context.Request.Cookies["jwt"];
-                return Task.CompletedTask;
-            }
-        };
+        // Specify the name of the auth cookie.
+        // ASP.NET picks a dumb name by default.
+        options.Cookie.Name = "TestApi";       
     });
+ // builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+//     .AddJwtBearer(options =>
+//     {
+//         options.TokenValidationParameters = new TokenValidationParameters
+//         {
+//             ValidateIssuerSigningKey = true,
+//             ValidateAudience = false,
+//             ValidateIssuer = false,
+//             ValidateLifetime = true,
+//             ClockSkew = TimeSpan.Zero,
+//             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+//                 builder.Configuration.GetSection("AppSettings:Token").Value!))
+//         };
+//         options.Events = new JwtBearerEvents
+//         {
+//             OnMessageReceived = context =>
+//             {
+//                 context.Token = context.Request.Cookies["jwt"];
+//                 return Task.CompletedTask;
+//             }
+//         };
+//     });
 
 builder.Services.AddAuthorization();
 
@@ -117,6 +134,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization( );
+app.UseSession();
 
 app.MapControllers();
 
