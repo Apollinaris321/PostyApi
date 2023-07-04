@@ -1,0 +1,21 @@
+﻿
+- make post
+- make comment
+- like post
+- like comment
+
+/profiles -> search/get, put
+/profiles/id/comments -> get 
+/profiles/id/posts -> get
+/profiles/id/comments/likes -> get
+/profiles/id/posts/likes -> get
+/profiles/id -> get profile of somebody
+
+/posts -> post, get
+/posts/id -> get, delete, put
+/posts/id/likes -> post, delete, get
+/posts/id/comments -> post, get, delete
+
+/comments -> post
+/comments/id -> get, delete, put
+/comments/id/likes -> post, get, delete

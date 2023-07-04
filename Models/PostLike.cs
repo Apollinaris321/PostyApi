@@ -2,7 +2,6 @@
 
 public class PostLike
 {
-    public long Id { get; set; }
     public long PostId { get; set; }
     public Post Post { get; set; }
     public long ProfileId { get; set; }

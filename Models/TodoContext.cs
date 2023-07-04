@@ -19,37 +19,8 @@ public class TodoContext : DbContext
         
         new WorksheetEntityConfiguration().Configure(modelBuilder.Entity<Worksheet>());
 
-        // modelBuilder.Entity<Profile>()
-        //     .HasMany(profile => profile.Posts)
-        //     .WithOne(post => post.Profile)
-        //     .OnDelete(DeleteBehavior.Cascade);
-
-        // modelBuilder.Entity<Post>()
-        //     .HasOne(post => post.Profile)
-        //     .WithMany(profile => profile.Posts)
-        //     .HasForeignKey(post => post.ProfileId)
-        //     .OnDelete(DeleteBehavior.Restrict);
-
-        // modelBuilder.Entity<Profile>()
-        //     .HasMany(profile => profile.Comments)
-        //     .WithOne(comment => comment.Profile)
-        //     .OnDelete(DeleteBehavior.Cascade);
-
-        // modelBuilder.Entity<Comment>()
-        //     .HasOne(comment => comment.Profile)
-        //     .WithMany(profile => profile.Comments)
-        //     .HasForeignKey(comment => comment.ProfileId)
-        //     .OnDelete(DeleteBehavior.Restrict);
-
-        // modelBuilder.Entity<Post>()
-        //     .HasMany(post => post.Comments)
-        //     .WithOne(comment => comment.Post)
-        //     .OnDelete(DeleteBehavior.Cascade);
-
-        // modelBuilder.Entity<Comment>()
-        //     .HasOne(comment => comment.Post)
-        //     .WithMany(post => post.Comments)
-        //     .HasForeignKey(comment => comment.PostId);
+        modelBuilder.Entity<PostLike>()
+            .HasKey(pl => new { pl.ProfileId, pl.PostId });
          
         modelBuilder.Entity<Profile>()
             .HasData(
