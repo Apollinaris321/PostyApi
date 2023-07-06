@@ -2,6 +2,7 @@ using System.Text;
 using LearnApi.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -12,13 +13,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // builder.Services.AddScoped<JwtService>();
 builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(options =>
-{
-    options.Cookie.Name = "TestApi";
-    options.IdleTimeout = TimeSpan.FromSeconds(200);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-});
 
 builder.Services.AddHttpLogging(logging =>
 {
@@ -43,38 +37,25 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<TodoContext>(opt =>
     opt.UseInMemoryDatabase("TodoList"));
 
+builder.Services.AddIdentity<Profile, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = false)
+    .AddEntityFrameworkStores<TodoContext>();
 
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        // Specify the name of the auth cookie.
-        // ASP.NET picks a dumb name by default.
-        options.Cookie.Name = "TestApi";       
-    });
- // builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-//     .AddJwtBearer(options =>
-//     {
-//         options.TokenValidationParameters = new TokenValidationParameters
-//         {
-//             ValidateIssuerSigningKey = true,
-//             ValidateAudience = false,
-//             ValidateIssuer = false,
-//             ValidateLifetime = true,
-//             ClockSkew = TimeSpan.Zero,
-//             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-//                 builder.Configuration.GetSection("AppSettings:Token").Value!))
-//         };
-//         options.Events = new JwtBearerEvents
-//         {
-//             OnMessageReceived = context =>
-//             {
-//                 context.Token = context.Request.Cookies["jwt"];
-//                 return Task.CompletedTask;
-//             }
-//         };
-//     });
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 3;
+    options.Password.RequireUppercase = false;
+});
 
-builder.Services.AddAuthorization();
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    // Cookie settings
+    options.Cookie.HttpOnly = true;
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(2);
+});
+
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -134,7 +115,6 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization( );
-app.UseSession();
 
 app.MapControllers();
 

@@ -746,7 +746,7 @@
           "Microsoft.AspNetCore.App"
         ]
       },
-      "Microsoft.AspNetCore.Cryptography.Internal/7.0.7": {
+      "Microsoft.AspNetCore.Cryptography.Internal/7.0.8": {
         "type": "package",
         "compile": {
           "lib/net7.0/Microsoft.AspNetCore.Cryptography.Internal.dll": {
@@ -759,10 +759,10 @@
           }
         }
       },
-      "Microsoft.AspNetCore.Cryptography.KeyDerivation/7.0.7": {
+      "Microsoft.AspNetCore.Cryptography.KeyDerivation/7.0.8": {
         "type": "package",
         "dependencies": {
-          "Microsoft.AspNetCore.Cryptography.Internal": "7.0.7"
+          "Microsoft.AspNetCore.Cryptography.Internal": "7.0.8"
         },
         "compile": {
           "lib/net7.0/Microsoft.AspNetCore.Cryptography.KeyDerivation.dll": {
@@ -1988,10 +1988,10 @@
           }
         }
       },
-      "Microsoft.Extensions.Identity.Core/7.0.7": {
+      "Microsoft.Extensions.Identity.Core/7.0.8": {
         "type": "package",
         "dependencies": {
-          "Microsoft.AspNetCore.Cryptography.KeyDerivation": "7.0.7",
+          "Microsoft.AspNetCore.Cryptography.KeyDerivation": "7.0.8",
           "Microsoft.Extensions.Logging": "7.0.0",
           "Microsoft.Extensions.Options": "7.0.1"
         },
@@ -5581,10 +5581,10 @@
         "microsoft.aspnetcore.authentication.jwtbearer.nuspec"
       ]
     },
-    "Microsoft.AspNetCore.Cryptography.Internal/7.0.7": {
-      "sha512": "cg/L/vXys1csH0ljfJJX9QfeHB6ezK7jwEsTg1J/hv2tZtBeeVKltXG7EWcnCt6t5yHGbmwiG2g1xNew/Tl8EQ==",
+    "Microsoft.AspNetCore.Cryptography.Internal/7.0.8": {
+      "sha512": "zEizZhRWT7zlPphdDSu3lcTjd6Lhn6i4LyE0fvx/Ru+RbBrMATinfU2Z1wKAX/yNLdMM7LSwMoPmBR4xum6jkw==",
       "type": "package",
-      "path": "microsoft.aspnetcore.cryptography.internal/7.0.7",
+      "path": "microsoft.aspnetcore.cryptography.internal/7.0.8",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -5596,14 +5596,14 @@
         "lib/net7.0/Microsoft.AspNetCore.Cryptography.Internal.xml",
         "lib/netstandard2.0/Microsoft.AspNetCore.Cryptography.Internal.dll",
         "lib/netstandard2.0/Microsoft.AspNetCore.Cryptography.Internal.xml",
-        "microsoft.aspnetcore.cryptography.internal.7.0.7.nupkg.sha512",
+        "microsoft.aspnetcore.cryptography.internal.7.0.8.nupkg.sha512",
         "microsoft.aspnetcore.cryptography.internal.nuspec"
       ]
     },
-    "Microsoft.AspNetCore.Cryptography.KeyDerivation/7.0.7": {
-      "sha512": "E1iXMtzhxeSwGm/AWaEB1A02hK361uHLTaRDT6ipdAqmMZweQ32v2KxPE0IWaGXz6kzW0EMj3OnrDckoncc2Jw==",
+    "Microsoft.AspNetCore.Cryptography.KeyDerivation/7.0.8": {
+      "sha512": "M7CEWYQXGsOqNEAWFki8ptAOldJMvr2nw8IpqFa6J+rnH+u20pYMo6Mn32pLmgFC0UzwIPmk0WI1y+M4U9z8aQ==",
       "type": "package",
-      "path": "microsoft.aspnetcore.cryptography.keyderivation/7.0.7",
+      "path": "microsoft.aspnetcore.cryptography.keyderivation/7.0.8",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -5615,7 +5615,7 @@
         "lib/net7.0/Microsoft.AspNetCore.Cryptography.KeyDerivation.xml",
         "lib/netstandard2.0/Microsoft.AspNetCore.Cryptography.KeyDerivation.dll",
         "lib/netstandard2.0/Microsoft.AspNetCore.Cryptography.KeyDerivation.xml",
-        "microsoft.aspnetcore.cryptography.keyderivation.7.0.7.nupkg.sha512",
+        "microsoft.aspnetcore.cryptography.keyderivation.7.0.8.nupkg.sha512",
         "microsoft.aspnetcore.cryptography.keyderivation.nuspec"
       ]
     },
@@ -7279,10 +7279,10 @@
         "microsoft.extensions.hosting.abstractions.nuspec"
       ]
     },
-    "Microsoft.Extensions.Identity.Core/7.0.7": {
-      "sha512": "HHRiKLPwtklPLHIdSS4uqwBqDWUOLARsKI6J91toQPsHJfiUHPFsCMk4eD5TzvXI514gfBwEUkXwWqyEG/Y8Ug==",
+    "Microsoft.Extensions.Identity.Core/7.0.8": {
+      "sha512": "kb7RoSkuQ1YVOwbv5C81O1L/b5ja96U5W//IRw+XQ20rDi7hof7dxUU5bhbqszpj/89IQ87/dNaE5PJKVPm9Aw==",
       "type": "package",
-      "path": "microsoft.extensions.identity.core/7.0.7",
+      "path": "microsoft.extensions.identity.core/7.0.8",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -7294,7 +7294,7 @@
         "lib/net7.0/Microsoft.Extensions.Identity.Core.xml",
         "lib/netstandard2.0/Microsoft.Extensions.Identity.Core.dll",
         "lib/netstandard2.0/Microsoft.Extensions.Identity.Core.xml",
-        "microsoft.extensions.identity.core.7.0.7.nupkg.sha512",
+        "microsoft.extensions.identity.core.7.0.8.nupkg.sha512",
         "microsoft.extensions.identity.core.nuspec"
       ]
     },
@@ -13081,6 +13081,7 @@
       "Microsoft.EntityFrameworkCore.Sqlite >= 7.0.7",
       "Microsoft.EntityFrameworkCore.Tools >= 7.0.7",
       "Microsoft.Extensions.Configuration.Binder >= 7.0.4",
+      "Microsoft.Extensions.Identity.Core >= 7.0.8",
       "Microsoft.VisualStudio.Web.CodeGeneration.Design >= 7.0.7",
       "Swashbuckle.AspNetCore >= 6.5.0"
     ]
@@ -13091,11 +13092,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\blura\\RiderProjects\\LearnApi\\LearnApi.csproj",
+      "projectUniqueName": "C:\\Users\\blura\\Desktop\\MathServer\\LearnApi.csproj",
       "projectName": "LearnApi",
-      "projectPath": "C:\\Users\\blura\\RiderProjects\\LearnApi\\LearnApi.csproj",
+      "projectPath": "C:\\Users\\blura\\Desktop\\MathServer\\LearnApi.csproj",
       "packagesPath": "C:\\Users\\blura\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\blura\\RiderProjects\\LearnApi\\obj\\",
+      "outputPath": "C:\\Users\\blura\\Desktop\\MathServer\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\blura\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -13164,6 +13165,10 @@
             "target": "Package",
             "version": "[7.0.4, )"
           },
+          "Microsoft.Extensions.Identity.Core": {
+            "target": "Package",
+            "version": "[7.0.8, )"
+          },
           "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
             "target": "Package",
             "version": "[7.0.7, )"
@@ -13192,7 +13197,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.203\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.202\\RuntimeIdentifierGraph.json"
       }
     }
   }

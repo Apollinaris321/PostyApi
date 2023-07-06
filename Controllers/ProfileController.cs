@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using LearnApi.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.IdentityModel.Tokens;
 
@@ -17,297 +18,141 @@ namespace LearnApi.Controllers
     {
         private readonly TodoContext _context;
         private readonly IConfiguration _configuration;
+        private readonly UserManager<Profile> _userManager;
+        private readonly SignInManager<Profile> _signInManager;
 
-        public ProfileController(TodoContext context,IConfiguration configuration)
+        public ProfileController(
+            TodoContext context,
+            IConfiguration configuration,
+            UserManager<Profile> userManager,
+            SignInManager<Profile> signInManager)
         {
             _context = context;
             _configuration = configuration;
+            _userManager = userManager;
+            _signInManager = signInManager;
         }
-        
-        private string CreateToken(Profile profile)
+
+        [HttpGet]
+        [Route("home")]
+        public async Task<IActionResult> HomeFeed(string sort = "new")
         {
-            List<Claim> claims = new List<Claim> {
-                new Claim(ClaimTypes.Name, profile.Username),
-                new Claim("ProfileId", profile.Id.ToString()),
-                new Claim(ClaimTypes.Email, profile.Email),
-                new Claim(ClaimTypes.Role, "User")
-            };
- 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                _configuration.GetSection("AppSettings:Token").Value!));
- 
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
- 
-            var token = new JwtSecurityToken(
-                claims: claims,
-                expires: DateTime.UtcNow.AddDays(1),
-                signingCredentials: creds
-            );
- 
-            var jwt = new JwtSecurityTokenHandler().WriteToken(token);
- 
-            return jwt;
+            if (sort != "new" && sort != "popular")
+            {
+                return BadRequest("Sort parameter not allowed!");
+            }
+            var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
+            if (sort == "new")
+            {
+                var posts = _context.Posts
+                    .Where(p => p.Profile.UserName == username)
+                    .OrderBy(p => p.CreatedAt)
+                    .Select(p => new PostDto(p)).ToListAsync();
+                return Ok(posts);
+            }
+            else
+            {
+                 var posts = _context.Posts
+                     .Where(p => p.Profile.UserName == username)
+                     .OrderBy(p => p.Likes)
+                     .Select(p => new PostDto(p)).ToListAsync();
+                 return Ok(posts);               
+            }
+            
         }
         
         [HttpGet]
         public async Task<IActionResult> GetAllProfiles()
         {
-            var profileList = await _context.Profiles.ToListAsync();
-            var username = HttpContext.Session.GetString("username");
-            var id = HttpContext.Session.GetInt32("id");
-            Console.WriteLine($"username: {username}, id: {id}");
-            return Ok(new{list = profileList, username = username, id = id});
+            var profileList = await _context.Profiles.Select(p => new ProfileDto(p)).ToListAsync();
+            return Ok(profileList);
         }
 
         [HttpGet]
-        [Route("{id}/comments")]
-        public async Task<IActionResult> GetProfileComments(long id)
+        [Route("{username}/comments")]
+        public async Task<IActionResult> GetProfileComments(string username)
         {
-            var comments = await _context.Comments.Include(c => c.Profile).Include(c => c.Post).Where(c => c.ProfileId == id).ToListAsync();
+            var comments = await _context.Comments.Where(c => c.Profile.UserName == username).Select(c => new CommentDto(c)).ToListAsync();
             return Ok(comments);
         }
         
         [HttpGet]
-        [Route("{id}/posts")]
-        public async Task<IActionResult> GetPostsByProfileId(long? id)
+        [Route("{username}/posts")]
+        public async Task<IActionResult> GetPostsByProfileId(string username)
         {
-            if (id == null)
-            {
-                return BadRequest($"Id cannot be empty!");
-            }           
-            var profile = await _context.Posts.Include(p => p.Profile).Where(post => post.ProfileId == id).ToListAsync();
+            var profile = await _context.Posts.Include(p => p.Profile).Where(post => post.Profile.UserName == username).ToListAsync();
             return Ok(profile);
-        }
-
-        [HttpPost]
-        [Route("addProfile")]
-        public async Task<IActionResult> AddProfile(ProfileDto profileDto)
-        {
-            try
-            {
-                var profile = new Profile(profileDto.Username, profileDto.Email, profileDto.Password );
-                var newProfile = await _context.Profiles.AddAsync(profile);
-                await _context.SaveChangesAsync();
-                return Ok(newProfile.Entity);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e);
-            }
         }
 
         [HttpPost]
         [Route("register")]
         public async Task<ActionResult<ProfileDto>> Register(RegisterDto registerDto)
         {
-            var result =
-                await _context.Profiles.FirstOrDefaultAsync(p =>
-                    p.Username == registerDto.Username || p.Email == registerDto.Email);
-            
-            if (result != null)
+            var newProfile = new Profile{
+                UserName = registerDto.Username, 
+                Email = registerDto.Email, 
+                
+            };
+            var registerResult = await _userManager.CreateAsync(newProfile, registerDto.Password);
+            if (registerResult.Succeeded)
             {
-                return Conflict("User already exists!");
+                await _signInManager.SignInAsync(newProfile, isPersistent: false);
+                return Ok(newProfile);
             }
 
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password);
-
-            var newProfile = new Profile(registerDto.Username, registerDto.Email, registerDto.Password);
-            newProfile.Password = passwordHash;
-
-            _context.Profiles.Add(newProfile);
-            await _context.SaveChangesAsync();
-            
-            string token = CreateToken(newProfile);
-            Response.Cookies.Append("jwt", token,  new CookieOptions()
+            var errorString = "";
+            foreach (var error in registerResult.Errors)
             {
-                HttpOnly = true,
-                Expires = DateTimeOffset.Now.AddDays(10),
-                IsEssential = true,
-                SameSite = SameSiteMode.None ,
-                Secure = true
-            });
-            return Ok(newProfile);
+                errorString += error.Description + " ,";
+            }
+            return BadRequest("Failed to register last "+ errorString);
         }
         
         [HttpPost]
         [Route("login")]
         public async Task<IActionResult> Login(LoginDto loginDto)
         {
-            var profileFound = await _context.Profiles.Include(p => p.Worksheets).FirstOrDefaultAsync(p => p.Username == loginDto.Username);
-
-            if (profileFound == null)
+            var user = await _userManager.FindByNameAsync(loginDto.Username);
+            if (user != null)
             {
-                return NotFound("User with this name doesn't exist!");
-            }
-
-            if (BCrypt.Net.BCrypt.Verify(loginDto.Password, profileFound.Password))
-            {
-                string token = CreateToken(profileFound);
-                Response.Cookies.Append("jwt", token,  new CookieOptions()
+                var signInResult = await _signInManager.PasswordSignInAsync(user, loginDto.Password, false ,false);
+                if (signInResult.Succeeded)
                 {
-                    HttpOnly = true,
-                    Expires = DateTimeOffset.Now.AddDays(10),
-                    IsEssential = true,
-                    SameSite = SameSiteMode.None ,
-                    Secure = true
-                });
-                HttpContext.Session.SetInt32("id", (int)profileFound.Id);
-                HttpContext.Session.SetString("username", profileFound.Username);
-                return Ok(profileFound);
+                    return Ok();
+                }
+                else
+                {
+                    return BadRequest("Wrong password!");
+                }
             }
 
-            return BadRequest("wrong password!");
+            return BadRequest("User doesn't exist!");
         }
 
         [Authorize]
         [HttpGet("logout")]
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
-            // Response.Cookies.Delete("jwt", new CookieOptions 
-            // {
-            //     HttpOnly = true,
-            //     SameSite = SameSiteMode.None,
-            //     Secure = true
-            // });
-            HttpContext.Session.Clear();
-            HttpContext.Response.Cookies.Delete("TestApi");
-            return Ok(new { message = "log out successful!" });
-        }
-         
-        [HttpGet]
-        [Authorize]
-        [Route("{id}/worksheet")]
-        public async Task<ActionResult> GetAllWorksheet(long? id)
-        {
-            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
-            if(id != profileId)
-            {
-                return Unauthorized("Cannot access other users data!");
-            }
-            List<Worksheet> worksheets = await _context.Worksheets.Where(w => w.ProfileId == profileId).ToListAsync();
-            return Ok(worksheets);
-        }        
-          
-        [HttpGet]
-        [Authorize]
-        [Route("{id}/worksheet/{worksheetId}")]
-        public async Task<ActionResult> GetWorksheet(long? id,long?  worksheetId)
-        {
-            if (worksheetId == null)
-            {
-                return BadRequest("Worksheet id is null!");
-            }
-            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
-            if(id != profileId)
-            {
-                return Unauthorized("Cannot access other users data!");
-            }
-            Worksheet? worksheet = await _context.Worksheets.FirstOrDefaultAsync(w => w.ProfileId == profileId && w.Id == worksheetId);
-            if (worksheet != null)
-            {
-                return Ok(worksheet);
-            }
-
-            return NotFound($"No worksheet with this id {worksheetId}");
-        }               
-        
-        [HttpPut]
-        [Authorize]
-        [Route("{id}/worksheet/{worksheetId}")]
-        public async Task<ActionResult> PostWorksheet(long id,long worksheetId, Worksheet worksheet)
-        {
-            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
-            if(id != profileId)
-            {
-                return Unauthorized("Cannot access other users data!");
-            }
-
-            if (worksheetId != worksheet.Id)
-            {
-                return BadRequest($"worksheet id's not matching! param: {worksheetId} body: {worksheet.Id} ");
-            }
-
-            var oldWorksheet = await _context.Worksheets.FirstOrDefaultAsync(w => w.Id == worksheet.Id);
-            _context.Entry(oldWorksheet).CurrentValues.SetValues(worksheet);
-            var result = await _context.SaveChangesAsync();
-            return Ok(worksheet);
-        }       
-        
-        [HttpPost]
-        [Authorize]
-        [Route("{id}/worksheet")]
-        public async Task<ActionResult> PostWorksheet(long id, WorksheetDto worksheetDto)
-        {
-            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
-            if(id != profileId)
-            {
-                return Unauthorized("Cannot access other users data!");
-            }
-
-            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.Id == profileId);
-
-            if (profile != null)
-            {
-                var newWorksheet = new Worksheet(worksheetDto.Title, worksheetDto.Exercises, worksheetDto.ProfileId);
-                await _context.Worksheets.AddAsync(newWorksheet);
-                profile.Worksheets.Add(newWorksheet);
-                await _context.SaveChangesAsync();
-                return Ok(newWorksheet);
-            }
-            else
-            {
-                return BadRequest("Could not find your user profile! ");
-            }
-        }
-
-        
-        [HttpDelete]
-        [Authorize]
-        [Route("{id}/worksheet/{worksheetId}")]
-        public async Task<ActionResult> DeleteWorksheet(long id, long worksheetId)
-        {
-            var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
-            if(id != profileId)
-            {
-                return Unauthorized("Cannot access other users data!");
-            }
-
-            var tempWorksheet = new Worksheet() { Id = worksheetId };
-            _context.Worksheets.Remove(tempWorksheet);
-            await _context.SaveChangesAsync();
-            return Ok(tempWorksheet.Id);
+            await _signInManager.SignOutAsync();
+            return Ok();
         }
         
         [Authorize]
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Profile>> GetProfile(long id)
+        [HttpGet("{username}")]
+        public async Task<ActionResult<Profile>> GetProfile(string username)
         {
-            if (_context.Profiles == null)
-            {
-                return NotFound();
-            }
-            var profile = await _context.Profiles.Include(p => p.Worksheets).FirstOrDefaultAsync(p => p.Id == id);
+            var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.UserName == username);
             if (profile == null)
             {
-                return NotFound();
+                return NotFound("error could not find profile!");
             }
-            return profile;
+            return Ok(new ProfileDto(profile));
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProfile(long id)
+        [HttpDelete("{username}")]
+        public async Task<IActionResult> DeleteProfile(string username)
         {
-            //var profileId = int.Parse(HttpContext.User.FindFirstValue("ProfileId") ?? string.Empty);
-            // if (profileId != id)
-            // {
-            //     return Unauthorized($"You can only delete your own profile! userid: {profileId}, paramId: {id}");
-            // }
-            
-            if (_context.Profiles == null)
-            {
-                return NotFound();
-            }
-            var profile = await _context.Profiles.Include(p => p.Worksheets).FirstOrDefaultAsync(p => p.Id == id);
+            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.UserName == username);
             if (profile == null)
             {
                 return NotFound();
