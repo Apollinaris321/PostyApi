@@ -203,19 +203,43 @@ public class PostController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> getAll([FromQuery] PaginationFilter filter)
+    [Route("feed")]
+    public async Task<IActionResult> Feed(int pageSize = 10, int pageNumber = 1,string sort = "new")
     {
-        var validFilter = new PaginationFilter(filter.PageNumber, filter.PageSize);
-        var response = await _context.Posts
-            .Include(post => post.Profile)
-            .Select(post => new PostDto(post))
-            .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
-            .Take(validFilter.PageSize)
-            .ToListAsync();
+        if (sort != "new" && sort != "popular")
+        {
+            return BadRequest("Sort can either be new or popular!");
+        }
 
-        string url = HttpContext.Request.Path;
-        return Ok(new {res = response, url = url });
-}
-         
-         
+        IQueryable<PostDto?> responseQuery;
+
+        if (sort == "new")
+        {
+            responseQuery = _context.Posts
+                .Include(post => post.Profile)
+                .OrderBy(p => p.CreatedAt)
+                .Select(post => new PostDto(post));
+        }
+        else
+        {
+            responseQuery = _context.Posts
+                .Include(post => post.Profile)
+                .OrderBy(p => p.Likes)
+                .Select(post => new PostDto(post));
+        }
+        
+        var len = responseQuery.Count();
+        var validFilter = new PaginationFilter(pageSize, len);
+        validFilter.SetCurrentPage(pageNumber);
+        var response = await responseQuery
+             .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
+             .Take(validFilter.PageSize)
+             .ToListAsync();                   
+        
+        var nextQuery = $"?PageNumber={validFilter.NextPage}&PageSize={validFilter.PageSize}&sort={sort}";
+        var prevQuery = $"?PageNumber={validFilter.PrevPage}&PageSize={validFilter.PageSize}&sort={sort}";
+        var nextRequestUrl = $"{Request.Scheme}://{Request.Host}{Request.Path}{nextQuery}";
+        var prevRequestUrl = $"{Request.Scheme}://{Request.Host}{Request.Path}{prevQuery}";           
+        return Ok(new {previousMessage = prevRequestUrl, nextMessage = nextRequestUrl, data = response});
+    }
 }
