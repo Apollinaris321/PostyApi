@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LearnApi.Controllers;
 
+[ApiController]
+[Route("api/[controller]")]
 public class CommentController : ControllerBase
 {
     private readonly TodoContext _context;
@@ -98,6 +100,7 @@ public class CommentController : ControllerBase
     [Route("{commentId}/likes")]
     public async Task<IActionResult> Like(long commentId)
     {  
+        Console.WriteLine("cookie: ", HttpContext.Request.Cookies.Count);
         var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
         var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.UserName == username);
         var comment = await _context.Comments.SingleOrDefaultAsync(c => c.Id == commentId);
