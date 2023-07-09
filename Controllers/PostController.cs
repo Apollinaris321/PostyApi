@@ -28,18 +28,14 @@ public class PostController : ControllerBase
     // /posts/id/comments -> post, get
     [HttpGet]
     [Route("{postId}/comments")]
-    public async Task<IActionResult> GetComments(long postId,int pageSize=10,int pageNumber=1)
+    public async Task<IActionResult> GetComments(long postId, int pageSize = 10, int pageNumber = 1)
     {
         var comments = _context.Comments
             .Include(comment => comment.Profile)
             .Where(comment => comment.PostId == postId)
             .OrderBy(comment => comment.CreatedAt)
-            .Select(c => new {
-                Comment = new CommentDto(c),
-                LikePath = $"{Request.Scheme}://{Request.Host}/api/Comment/{c.Id}/likes",
-                DislikePath = $"{Request.Scheme}://{Request.Host}/api/Comment/{c.Id}/likes"
-            });
-        
+            .Select(c =>  new CommentDto(c));
+
         var len = comments.Count();
         var validFilter = new PaginationFilter(pageSize, len);
         validFilter.SetCurrentPage(pageNumber);
@@ -47,21 +43,13 @@ public class PostController : ControllerBase
             .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
             .Take(validFilter.PageSize)
             .ToListAsync();
-         
-        var nextQuery = $"?PageNumber={validFilter.NextPage}&PageSize={validFilter.PageSize}";
-        var prevQuery = $"?PageNumber={validFilter.PrevPage}&PageSize={validFilter.PageSize}";
-        var nextRequestUrl = $"{Request.Scheme}://{Request.Host}{Request.Path}{nextQuery}";
-        var prevRequestUrl = $"{Request.Scheme}://{Request.Host}{Request.Path}{prevQuery}";           
-        if (validFilter.CurrentPage == validFilter.NextPage)
-        {
-            nextRequestUrl = "";
-        }       
-        return Ok(new {previousMessage = prevRequestUrl, nextMessage = nextRequestUrl, data = response});       
+
+        return Ok(new { currentPage = validFilter.CurrentPage, lastPage = validFilter.LastPage, comments = response });
     }
 
     [HttpPost]
     [Route("{postId}/comments")]
-    public async Task<IActionResult> AddComment(long postId, string text)
+    public async Task<IActionResult> AddComment(long postId,CreateCommentDto commentPayload)
     {
         var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
         var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.UserName == username);
@@ -75,7 +63,7 @@ public class PostController : ControllerBase
         {
             Post = post,
             Profile = profile,
-            Text = text,
+            Text = commentPayload.Text,
             CreatedAt = DateTime.Now,
             Likes = 0,
         };
@@ -84,7 +72,7 @@ public class PostController : ControllerBase
         post.Comments.Add(result.Entity);
         profile.Comments.Add(result.Entity);
         await _context.SaveChangesAsync();
-        return Ok(result.Entity);
+        return Ok(new CommentDto(result.Entity));
     }
 
     [HttpGet]
@@ -203,7 +191,8 @@ public class PostController : ControllerBase
             return BadRequest("Can't create posts for other users!");
         }
 
-        var owner = await _context.Profiles.SingleOrDefaultAsync(p => p.UserName == username);
+        var owner = await _context.Profiles
+            .SingleOrDefaultAsync(p => p.UserName == username);
         if (owner == null)
         {
             return BadRequest($"Could not find your profile!");
@@ -220,7 +209,7 @@ public class PostController : ControllerBase
 
         var result = await _context.Posts.AddAsync(newPost);
         await _context.SaveChangesAsync();
-        return Ok(result.Entity);
+        return Ok(new PostDto(result.Entity));
     }
 
     [HttpGet]
@@ -235,13 +224,8 @@ public class PostController : ControllerBase
         //if (sort == "new")
         var responseQuery = _context.Posts
             .Include(post => post.Profile)
-            .OrderBy(p => p.CreatedAt)
-            .Select(post => new {
-                Likepath = $"Post/{post.Id}/likes",
-                Commentpath = $"Post/{post.Id}/comments",
-                Postpath = $"Post/{post.Id}",
-                Post = new PostDto(post)
-            });
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(post => new PostDto(post));
         
         var len = responseQuery.Count();
         var validFilter = new PaginationFilter(pageSize, len);
@@ -251,14 +235,6 @@ public class PostController : ControllerBase
              .Take(validFilter.PageSize)
              .ToListAsync();                   
         
-        var nextQuery = $"?PageNumber={validFilter.NextPage}&PageSize={validFilter.PageSize}&sort={sort}";
-        var prevQuery = $"?PageNumber={validFilter.PrevPage}&PageSize={validFilter.PageSize}&sort={sort}";
-        var nextRequestUrl = $"{Request.Path}{nextQuery}";
-        var prevRequestUrl = $"{Request.Path}{prevQuery}";
-        if (validFilter.CurrentPage == validFilter.NextPage)
-        {
-            nextRequestUrl = "";
-        }
-        return Ok(new {previousMessage = prevRequestUrl, nextMessage = nextRequestUrl, data = response});
+        return Ok(new {currentPage = validFilter.CurrentPage, lastPage = validFilter.LastPage, posts = response});
     }
 }

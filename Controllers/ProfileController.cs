@@ -72,7 +72,10 @@ namespace LearnApi.Controllers
         [Route("{username}/comments")]
         public async Task<IActionResult> GetProfileComments(string username)
         {
-            var comments = await _context.Comments.Where(c => c.Profile.UserName == username).Select(c => new CommentDto(c)).ToListAsync();
+            var comments = await _context.Comments
+                .Where(c => c.Profile.UserName == username)
+                .Select(c => new CommentDto(c))
+                .ToListAsync();
             return Ok(comments);
         }
         

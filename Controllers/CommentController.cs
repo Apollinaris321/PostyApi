@@ -41,7 +41,7 @@ public class CommentController : ControllerBase
     
     [HttpPut]
     [Route("{id}")]
-    public async Task<IActionResult> update(long id, string text)
+    public async Task<IActionResult> update(long id, CreateCommentDto commentDto)
     {
         var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
         var comment = await _context.Comments.SingleOrDefaultAsync(c => c.Id == id && c.Profile.UserName == username);
@@ -50,7 +50,7 @@ public class CommentController : ControllerBase
             return BadRequest($"Comment doesn't exist! id: {id}");
         }
 
-        comment.Text = text;
+        comment.Text = commentDto.Text;
         await _context.SaveChangesAsync();
         return Ok(comment);
     }
