@@ -58,7 +58,6 @@ namespace LearnApi.Controllers
                      .Select(p => new PostDto(p)).ToListAsync();
                  return Ok(posts);               
             }
-            
         }
         
         [HttpGet]
@@ -83,8 +82,12 @@ namespace LearnApi.Controllers
         [Route("{username}/posts")]
         public async Task<IActionResult> GetPostsByProfileId(string username)
         {
-            var profile = await _context.Posts.Include(p => p.Profile).Where(post => post.Profile.UserName == username).ToListAsync();
-            return Ok(profile);
+            var posts = await _context.Posts
+                .Include(p => p.Profile)
+                .Where(post => post.Profile.UserName == username)
+                .Select(post => new PostDto(post))
+                .ToListAsync();
+            return Ok(posts);
         }
 
         [HttpPost]
@@ -151,7 +154,9 @@ namespace LearnApi.Controllers
             }
             return Ok(new ProfileDto(profile));
         }
+        
 
+        // TODO can only delete your own profile
         [HttpDelete("{username}")]
         public async Task<IActionResult> DeleteProfile(string username)
         {

@@ -33,12 +33,13 @@ public class PostController : ControllerBase
         var comments = _context.Comments
             .Include(comment => comment.Profile)
             .Where(comment => comment.PostId == postId)
-            .OrderBy(comment => comment.CreatedAt)
+            .OrderByDescending(comment => comment.CreatedAt)
             .Select(c =>  new CommentDto(c));
 
         var len = comments.Count();
         var validFilter = new PaginationFilter(pageSize, len);
         validFilter.SetCurrentPage(pageNumber);
+        
         var response = await comments
             .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
             .Take(validFilter.PageSize)
@@ -54,6 +55,7 @@ public class PostController : ControllerBase
         var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
         var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.UserName == username);
         var post = await _context.Posts.SingleOrDefaultAsync(post => post.Id == postId);
+        
         if (profile == null || post == null)
         {
             return BadRequest("Couldnt find profile or post");
@@ -79,8 +81,11 @@ public class PostController : ControllerBase
     [Route("{postId}/likes")]
     public async Task<IActionResult> GetLikes(long postId)
     {
-        var likes = await _context.PostLikes.Include(like => like.Profile).Where(like => like.PostId == postId)
-            .Select(l => new { Username = l.Profile.UserName }).ToListAsync();
+        var likes = await _context.PostLikes
+            .Include(like => like.Profile)
+            .Where(like => like.PostId == postId)
+            .Select(l => new { Username = l.Profile.UserName})
+            .ToListAsync();
         return Ok(likes);
     }
 
@@ -89,7 +94,8 @@ public class PostController : ControllerBase
     public async Task<IActionResult> Dislike(long postId)
     {
         var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
-        var like = await _context.PostLikes.Include(like => like.Post)
+        var like = await _context.PostLikes
+            .Include(like => like.Post)
             .SingleOrDefaultAsync(like => like.Profile.UserName == username && like.PostId == postId);
         if (like == null)
         {
@@ -129,7 +135,7 @@ public class PostController : ControllerBase
         }
         catch (Exception e)
         {
-            return BadRequest("Already liked this post!");
+            return BadRequest("Already liked this post!" + e.Message);
         }
     }
 
@@ -137,42 +143,63 @@ public class PostController : ControllerBase
     [Route("{id}")]
     public async Task<IActionResult> Edit(long id, CreatePostDto postDto)
     {
-        var post = await _context.Posts.SingleOrDefaultAsync(p => p.Id == id);
+        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
+        var post = await _context.Posts
+            .Include(p => p.Profile)
+            .SingleOrDefaultAsync(p => p.Id == id && p.Profile.UserName == username );
         if (post == null)
         {
-            return BadRequest($"Post with id: {id} doesn't exist!");
+            return BadRequest($"Post with id: {id} doesn't exist or it's not your post! {username} name");
         }
 
-        post.Text = postDto.Text;
-        post.Title = postDto.Title;
-        _context.Entry(post).CurrentValues.SetValues(new { Text = postDto.Text, Title = post.Title });
-        await _context.SaveChangesAsync();
-        return Ok(post);
+        try
+        {
+            post.Text = postDto.Text;
+            post.Title = postDto.Title;
+            _context.Entry(post).CurrentValues.SetValues(new { Text = postDto.Text, Title = post.Title });
+            await _context.SaveChangesAsync();
+            return Ok(post);
+        }
+        catch (Exception e)
+        {
+            return BadRequest("something went wrong when saving changes: " + e.Message);
+        }
     }
 
     [HttpDelete]
     [Route("{id}")]
     public async Task<IActionResult> deleteById(long id)
     {
+        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
         var post = await _context.Posts
             .Include(p => p.Profile)
             .Include(p => p.Comments)
-            .SingleOrDefaultAsync(p => p.Id == id);
+            .SingleOrDefaultAsync(p => p.Id == id && p.Profile.UserName == username);
         if (post == null)
         {
-            return BadRequest($"Post with id: {id} doesn't exist!");
+            return BadRequest($"Post with id: {id} doesn't exist or you didn't own this post!");
         }
 
-        _context.Posts.Remove(post);
-        await _context.SaveChangesAsync();
-        return Ok();
+        try
+        {
+
+            _context.Posts.Remove(post);
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest("something went wrong when saving changes: " + e.Message);
+        }
     }
 
     [HttpGet]
     [Route("{id}")]
     public async Task<IActionResult> getById(long id)
     {
-        var post = await _context.Posts.Include(post => post.Profile).Select(p => new PostDto(p))
+        var post = await _context.Posts
+            .Include(post => post.Profile)
+            .Select(p => new PostDto(p))
             .SingleOrDefaultAsync(p => p.Id == id);
         if (post == null)
         {
@@ -188,7 +215,7 @@ public class PostController : ControllerBase
         var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
         if (username == null)
         {
-            return BadRequest("Can't create posts for other users!");
+            return BadRequest("Register or Login to create posts!");
         }
 
         var owner = await _context.Profiles
@@ -235,6 +262,11 @@ public class PostController : ControllerBase
              .Take(validFilter.PageSize)
              .ToListAsync();                   
         
-        return Ok(new {currentPage = validFilter.CurrentPage, lastPage = validFilter.LastPage, posts = response});
+        return Ok(new
+        {
+            currentPage = validFilter.CurrentPage,
+            lastPage = validFilter.LastPage,
+            posts = response
+        });
     }
 }

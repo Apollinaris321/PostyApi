@@ -9,16 +9,13 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllers();
-// builder.Services.AddScoped<JwtService>();
 builder.Services.AddDistributedMemoryCache();
 
 builder.Services.AddHttpLogging(logging =>
 {
     logging.RequestBodyLogLimit = 4096;
     logging.ResponseBodyLogLimit = 4096;
-
 });
 
 builder.Services.AddCors(options =>
@@ -34,6 +31,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddDbContext<TodoContext>(opt =>
     opt.UseInMemoryDatabase("TodoList"));
 
@@ -56,7 +54,6 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.ExpireTimeSpan = TimeSpan.FromHours(1);
     options.Cookie.SameSite = SameSiteMode.None;
 });
-
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -95,13 +92,13 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 
 using(var scope = app.Services.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<TodoContext>();
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<TodoContext>();
             
-            //EnsureDeleted() is an additional option that first deletes an existing database.
-            dbContext.Database.EnsureDeleted(); 
-            dbContext.Database.EnsureCreated();
-        }
+    //EnsureDeleted() is an additional option that first deletes an existing database.
+    dbContext.Database.EnsureDeleted(); 
+    dbContext.Database.EnsureCreated();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
