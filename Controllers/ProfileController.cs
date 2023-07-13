@@ -33,6 +33,54 @@ namespace LearnApi.Controllers
             _signInManager = signInManager;
         }
 
+        [HttpPost]
+        [Route("register")]
+        public async Task<ActionResult<ProfileDto>> Register(RegisterDto registerDto)
+        {
+            var newProfile = new Profile{
+                UserName = registerDto.Username, 
+                Email = registerDto.Email, 
+                
+            };
+            var registerResult = await _userManager.CreateAsync(newProfile, registerDto.Password);
+            if (registerResult.Succeeded)
+            {
+                await _signInManager.SignInAsync(newProfile, isPersistent: false);
+                return Ok(newProfile);
+            }
+
+            var errorString = "";
+            foreach (var error in registerResult.Errors)
+            {
+                errorString += error.Description + " ,";
+            }
+            return BadRequest(new {errors = new {Register = $"Failed to register: {errorString}"}});
+        }
+        
+        [HttpPost]
+        [Route("login")]
+        public async Task<IActionResult> Login(LoginDto loginDto)
+        {
+            var user = await _userManager.FindByNameAsync(loginDto.Username);
+            if (user != null)
+            {
+                var signInResult = await _signInManager.PasswordSignInAsync(user, loginDto.Password, false ,false);
+                if (signInResult.Succeeded)
+                {
+                    return Ok();
+                }
+            }
+            return BadRequest(new {errors = new {Login = "Wrong password or Username!"}});
+        }
+
+        [Authorize]
+        [HttpGet("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return Ok();
+        }
+        
         [HttpGet]
         [Route("home")]
         public async Task<IActionResult> HomeFeed(string sort = "new")
@@ -89,59 +137,6 @@ namespace LearnApi.Controllers
                 .ToListAsync();
             return Ok(posts);
         }
-
-        [HttpPost]
-        [Route("register")]
-        public async Task<ActionResult<ProfileDto>> Register(RegisterDto registerDto)
-        {
-            var newProfile = new Profile{
-                UserName = registerDto.Username, 
-                Email = registerDto.Email, 
-                
-            };
-            var registerResult = await _userManager.CreateAsync(newProfile, registerDto.Password);
-            if (registerResult.Succeeded)
-            {
-                await _signInManager.SignInAsync(newProfile, isPersistent: false);
-                return Ok(newProfile);
-            }
-
-            var errorString = "";
-            foreach (var error in registerResult.Errors)
-            {
-                errorString += error.Description + " ,";
-            }
-            return BadRequest("Failed to register last "+ errorString);
-        }
-        
-        [HttpPost]
-        [Route("login")]
-        public async Task<IActionResult> Login(LoginDto loginDto)
-        {
-            var user = await _userManager.FindByNameAsync(loginDto.Username);
-            if (user != null)
-            {
-                var signInResult = await _signInManager.PasswordSignInAsync(user, loginDto.Password, false ,false);
-                if (signInResult.Succeeded)
-                {
-                    return Ok();
-                }
-                else
-                {
-                    return BadRequest("Wrong password!");
-                }
-            }
-
-            return BadRequest("User doesn't exist!");
-        }
-
-        [Authorize]
-        [HttpGet("logout")]
-        public async Task<IActionResult> Logout()
-        {
-            await _signInManager.SignOutAsync();
-            return Ok();
-        }
         
         [Authorize]
         [HttpGet("{username}")]
@@ -155,7 +150,6 @@ namespace LearnApi.Controllers
             return Ok(new ProfileDto(profile));
         }
         
-
         // TODO can only delete your own profile
         [HttpDelete("{username}")]
         public async Task<IActionResult> DeleteProfile(string username)
