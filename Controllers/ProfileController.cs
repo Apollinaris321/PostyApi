@@ -46,7 +46,7 @@ namespace LearnApi.Controllers
             if (registerResult.Succeeded)
             {
                 await _signInManager.SignInAsync(newProfile, isPersistent: false);
-                return Ok(newProfile);
+                return Ok(new ProfileDto(newProfile));
             }
 
             var errorString = "";
@@ -67,7 +67,7 @@ namespace LearnApi.Controllers
                 var signInResult = await _signInManager.PasswordSignInAsync(user, loginDto.Password, false ,false);
                 if (signInResult.Succeeded)
                 {
-                    return Ok();
+                    return Ok(new ProfileDto(user));
                 }
             }
             return BadRequest(new {errors = new {Login = "Wrong password or Username!"}});
