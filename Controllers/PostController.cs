@@ -199,14 +199,13 @@ public class PostController : ControllerBase
     {
         var post = await _context.Posts
             .Include(post => post.Profile)
-            .Select(p => new PostDto(p))
             .SingleOrDefaultAsync(p => p.Id == id);
         if (post == null)
         {
             return BadRequest($"Post with id: {id} doesn't exist!");
         }
 
-        return Ok(post);
+        return Ok(new PostDto(post));
     }
 
     [HttpPost]
