@@ -30,22 +30,21 @@ public class PostController : ControllerBase
     [Route("{postId}/comments")]
     public async Task<IActionResult> GetComments(long postId, int pageSize = 10, int pageNumber = 1)
     {
+        var len = _context.Comments
+            .Count();
+        var validFilter = new PaginationFilter(pageSize, len);
+        validFilter.SetCurrentPage(pageNumber);
+               
         var comments = _context.Comments
             .Include(comment => comment.Profile)
             .Where(comment => comment.PostId == postId)
             .OrderByDescending(comment => comment.CreatedAt)
-            .Select(c =>  new CommentDto(c));
-
-        var len = comments.Count();
-        var validFilter = new PaginationFilter(pageSize, len);
-        validFilter.SetCurrentPage(pageNumber);
-        
-        var response = await comments
+            .Select(c =>  new CommentDto(c))
             .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
             .Take(validFilter.PageSize)
             .ToListAsync();
 
-        return Ok(new { currentPage = validFilter.CurrentPage, lastPage = validFilter.LastPage, comments = response });
+        return Ok(new { currentPage = validFilter.CurrentPage, lastPage = validFilter.LastPage, comments = comments });
     }
 
     [HttpPost]

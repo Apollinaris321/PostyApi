@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LearnApi.Models;
+using LearnApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
@@ -82,33 +83,6 @@ namespace LearnApi.Controllers
         }
         
         [HttpGet]
-        [Route("home")]
-        public async Task<IActionResult> HomeFeed(string sort = "new")
-        {
-            if (sort != "new" && sort != "popular")
-            {
-                return BadRequest("Sort parameter not allowed!");
-            }
-            var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
-            if (sort == "new")
-            {
-                var posts = _context.Posts
-                    .Where(p => p.Profile.UserName == username)
-                    .OrderBy(p => p.CreatedAt)
-                    .Select(p => new PostDto(p)).ToListAsync();
-                return Ok(posts);
-            }
-            else
-            {
-                 var posts = _context.Posts
-                     .Where(p => p.Profile.UserName == username)
-                     .OrderBy(p => p.Likes)
-                     .Select(p => new PostDto(p)).ToListAsync();
-                 return Ok(posts);               
-            }
-        }
-        
-        [HttpGet]
         public async Task<IActionResult> GetAllProfiles()
         {
             var profileList = await _context.Profiles.Select(p => new ProfileDto(p)).ToListAsync();
@@ -117,28 +91,54 @@ namespace LearnApi.Controllers
 
         [HttpGet]
         [Route("{username}/comments")]
-        public async Task<IActionResult> GetProfileComments(string username)
+        public async Task<IActionResult> GetProfileComments(string username, int pageNumber = 1, int pageSize = 10)
         {
+            var len = _context.Comments
+                .Count(comment => comment.Profile.UserName == username);
+            var validFilter = new PaginationFilter(pageSize, len);
+            validFilter.SetCurrentPage(pageNumber);
+                         
             var comments = await _context.Comments
+                .Include(c => c.Profile)
                 .Where(c => c.Profile.UserName == username)
                 .Select(c => new CommentDto(c))
+                .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
+                .Take(validFilter.PageSize)
                 .ToListAsync();
-            return Ok(comments);
+            return Ok(new
+            {
+                currentPage = validFilter.CurrentPage,
+                lastPage = validFilter.LastPage,
+                comments = comments
+            });
         }
         
         [HttpGet]
         [Route("{username}/posts")]
-        public async Task<IActionResult> GetPostsByProfileId(string username)
+        public async Task<IActionResult> GetProfilePosts(string username, int pageSize = 10, int pageNumber = 1)
         {
+            var len = _context.Posts
+                .Count(post => post.Profile.UserName == username);
+            var validFilter = new PaginationFilter(pageSize, len);
+            validFilter.SetCurrentPage(pageNumber);
+             
             var posts = await _context.Posts
                 .Include(p => p.Profile)
                 .Where(post => post.Profile.UserName == username)
+                .OrderByDescending(post => post.CreatedAt)
                 .Select(post => new PostDto(post))
+                .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
+                .Take(validFilter.PageSize)
                 .ToListAsync();
-            return Ok(posts);
+            
+            return Ok(new
+            {
+                currentPage = validFilter.CurrentPage,
+                lastPage = validFilter.LastPage,
+                posts = posts
+            });
         }
         
-        [Authorize]
         [HttpGet("{username}")]
         public async Task<ActionResult<Profile>> GetProfile(string username)
         {
@@ -151,9 +151,16 @@ namespace LearnApi.Controllers
         }
         
         // TODO can only delete your own profile
+        // i keep it here for testing...
+        //[Authorize]
         [HttpDelete("{username}")]
         public async Task<IActionResult> DeleteProfile(string username)
         {
+            var contextUsername = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
+            if (contextUsername != username)
+            {
+                //return BadRequest("Can't delete other peoples profiles!");
+            }
             var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.UserName == username);
             if (profile == null)
             {
