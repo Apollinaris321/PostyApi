@@ -35,7 +35,7 @@ public class PostController : ControllerBase
         var validFilter = new PaginationFilter(pageSize, len);
         validFilter.SetCurrentPage(pageNumber);
                
-        var comments = _context.Comments
+        var comments = await _context.Comments
             .Include(comment => comment.Profile)
             .Where(comment => comment.PostId == postId)
             .OrderByDescending(comment => comment.CreatedAt)
