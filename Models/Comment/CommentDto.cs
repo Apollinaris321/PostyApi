@@ -8,6 +8,7 @@ public class CommentDto
      public DateTime CreatedAt { get; set; }   
      public string AuthorName { get; set; }
      public long PostId { get; set; }   
+     public bool LikedByYou { get; set; }
      
      public CommentDto(){}
 
@@ -15,9 +16,24 @@ public class CommentDto
      {
           Id = comment.Id;
           Text = comment.Text;
-          Likes = comment.Likes;
           CreatedAt = comment.CreatedAt;
           AuthorName = comment.Profile.UserName ?? "EMPTY";
           PostId = comment.PostId;
+          Likes = comment.Likes;
+          LikedByYou = false;
+     }
+     
+     public CommentDto(Comment comment, string usernameHasLiked)
+     {
+          Id = comment.Id;
+          Text = comment.Text;
+          CreatedAt = comment.CreatedAt;
+          AuthorName = comment.Profile.UserName ?? "EMPTY";
+          PostId = comment.PostId;
+          Likes = comment.LikedBy.Count;
+          if (comment.LikedBy.FirstOrDefault(like => like.ProfileId == usernameHasLiked) != null)
+          {
+               LikedByYou = true;
+          }
      }
 }

@@ -10,9 +10,24 @@ public class PostDto
      public string AuthorName { get; set; }
      public DateTime CreatedAt { get; set; }
      public int Likes { get; set; }
+     public bool LikedByYou { get; set; }
      
      public PostDto(){}
 
+     public PostDto(Post post, string profileId)
+     {
+          Id = post.Id;
+          Title = post.Title;
+          Text = post.Text;
+          AuthorName = post.Profile.UserName ?? "";
+          CreatedAt = post.CreatedAt;
+          Likes = post.ProfileLikes.Count;
+          if (post.ProfileLikes.FirstOrDefault(like => like.ProfileId == profileId) != null)
+          {
+               LikedByYou = true;
+          }
+     }
+     
      public PostDto(Post post)
      {
           Id = post.Id;
@@ -21,5 +36,9 @@ public class PostDto
           AuthorName = post.Profile.UserName ?? "";
           CreatedAt = post.CreatedAt;
           Likes = post.Likes;
+          if (post.ProfileLikes.Count > 0)
+          {
+               LikedByYou = true;
+          }
      }
 }

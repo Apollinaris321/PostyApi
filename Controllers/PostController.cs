@@ -30,6 +30,9 @@ public class PostController : ControllerBase
     [Route("{postId}/comments")]
     public async Task<IActionResult> GetComments(long postId, int pageSize = 10, int pageNumber = 1)
     {
+        
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
         var len = _context.Comments
             .Count();
         var validFilter = new PaginationFilter(pageSize, len);
@@ -37,9 +40,11 @@ public class PostController : ControllerBase
                
         var comments = await _context.Comments
             .Include(comment => comment.Profile)
+            .Include(comment => comment.LikedBy
+                .Where(like => like.ProfileId == userId))
             .Where(comment => comment.PostId == postId)
             .OrderByDescending(comment => comment.CreatedAt)
-            .Select(c =>  new CommentDto(c))
+            .Select(c =>  new CommentDto(c, userId))
             .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
             .Take(validFilter.PageSize)
             .ToListAsync();
@@ -52,6 +57,7 @@ public class PostController : ControllerBase
     public async Task<IActionResult> AddComment(long postId,CreateCommentDto commentPayload)
     {
         var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.UserName == username);
         var post = await _context.Posts.SingleOrDefaultAsync(post => post.Id == postId);
         
@@ -64,9 +70,7 @@ public class PostController : ControllerBase
         {
             Post = post,
             Profile = profile,
-            Text = commentPayload.Text,
-            CreatedAt = DateTime.Now,
-            Likes = 0,
+            Text = commentPayload.Text
         };
 
         var result = _context.Comments.Add(newComment);

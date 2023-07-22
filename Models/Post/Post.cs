@@ -20,6 +20,11 @@ public class Post
     public ICollection<Comment> Comments { get; set; }
     [JsonIgnore]
     public ICollection<PostLike> ProfileLikes { get; set; }
-    
-    public Post(){}
+
+    public Post()
+    {
+        ProfileLikes = new List<PostLike>();
+        Likes = 0;
+        CreatedAt = DateTime.Now;
+    }
 }
