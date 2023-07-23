@@ -22,62 +22,94 @@ public class PostController : ControllerBase
         _userManager = userManager;
     }
 
-    // /posts -> post, get
-    // /posts/id -> get, delete, put
-    // /posts/id/likes -> post, delete, get
-    // /posts/id/comments -> post, get
+    [HttpGet]
+    [Route("feed")]
+    public async Task<IActionResult> Feed(int pageSize = 10, int pageNumber = 1, string order = "date")
+    {
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var len = _context.Posts.Count();
+        var validFilter = new PaginationFilter(pageSize, len);       
+        validFilter.SetCurrentPage(pageNumber);
+
+        if (order == "date")
+        {
+            var response = await _context.Posts
+                .Include(post => post.Profile)
+                .Include(post => post.ProfileLikes)
+                .OrderByDescending(p => p.CreatedAt)
+                .Select(post => new PostDto(post, userId))
+                .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
+                .Take(validFilter.PageSize)
+                .ToListAsync();                   
+            
+            return Ok(new
+            {
+                currentPage = validFilter.CurrentPage,
+                lastPage = validFilter.LastPage,
+                posts = response
+            });           
+        }
+        else if (order == "likes")
+        {
+             var response = await _context.Posts
+                 .Include(post => post.Profile)
+                 .Include(post => post.ProfileLikes)
+                 .OrderByDescending(p => p.CreatedAt)
+                 .Select(post => new PostDto(post, userId))
+                 .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
+                 .Take(validFilter.PageSize)
+                 .ToListAsync();                   
+             
+             return Ok(new
+             {
+                 currentPage = validFilter.CurrentPage,
+                 lastPage = validFilter.LastPage,
+                 posts = response
+             });           
+        }
+
+        return BadRequest($"Order can be either likes or date not {order}");
+    }
+    
     [HttpGet]
     [Route("{postId}/comments")]
-    public async Task<IActionResult> GetComments(long postId, int pageSize = 10, int pageNumber = 1)
+    public async Task<IActionResult> GetComments(long postId, int pageSize = 10, int pageNumber = 1, string order = "likes")
     {
-        
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
         var len = _context.Comments
             .Count();
         var validFilter = new PaginationFilter(pageSize, len);
         validFilter.SetCurrentPage(pageNumber);
-               
-        var comments = await _context.Comments
-            .Include(comment => comment.Profile)
-            .Include(comment => comment.LikedBy
-                .Where(like => like.ProfileId == userId))
-            .Where(comment => comment.PostId == postId)
-            .OrderByDescending(comment => comment.CreatedAt)
-            .Select(c =>  new CommentDto(c, userId))
-            .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
-            .Take(validFilter.PageSize)
-            .ToListAsync();
 
-        return Ok(new { currentPage = validFilter.CurrentPage, lastPage = validFilter.LastPage, comments = comments });
-    }
-
-    [HttpPost]
-    [Route("{postId}/comments")]
-    public async Task<IActionResult> AddComment(long postId,CreateCommentDto commentPayload)
-    {
-        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
-        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.UserName == username);
-        var post = await _context.Posts.SingleOrDefaultAsync(post => post.Id == postId);
-        
-        if (profile == null || post == null)
+        if (order == "likes")
         {
-            return BadRequest("Couldnt find profile or post");
+            var comments = await _context.Comments
+                .Include(comment => comment.Profile)
+                .Include(comment => comment.LikedBy)
+                .Where(comment => comment.PostId == postId)
+                .OrderByDescending(comment => comment.Likes)
+                .Select(c =>  new CommentDto(c, userId))
+                .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
+                .Take(validFilter.PageSize)
+                .ToListAsync();
+ 
+            return Ok(new { currentPage = validFilter.CurrentPage, lastPage = validFilter.LastPage, comments = comments });           
         }
-
-        var newComment = new Comment
+        else if(order == "date")
         {
-            Post = post,
-            Profile = profile,
-            Text = commentPayload.Text
-        };
-
-        var result = _context.Comments.Add(newComment);
-        post.Comments.Add(result.Entity);
-        profile.Comments.Add(result.Entity);
-        await _context.SaveChangesAsync();
-        return Ok(new CommentDto(result.Entity));
+             var comments = await _context.Comments
+                 .Include(comment => comment.Profile)
+                 .Include(comment => comment.LikedBy)
+                 .Where(comment => comment.PostId == postId)
+                 .OrderByDescending(comment => comment.CreatedAt)
+                 .Select(c =>  new CommentDto(c, userId))
+                 .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
+                 .Take(validFilter.PageSize)
+                 .ToListAsync();
+  
+             return Ok(new { currentPage = validFilter.CurrentPage, lastPage = validFilter.LastPage, comments = comments });                      
+        }
+        return BadRequest("Order can be either date or likes. Yours was: " + order);
     }
 
     [HttpGet]
@@ -91,50 +123,107 @@ public class PostController : ControllerBase
             .ToListAsync();
         return Ok(likes);
     }
-
-    [HttpDelete]
-    [Route("{postId}/likes")]
-    public async Task<IActionResult> Dislike(long postId)
+    
+    [HttpGet]
+    [Route("{id}")]
+    public async Task<IActionResult> getById(long id)
     {
-        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
-        var like = await _context.PostLikes
-            .Include(like => like.Post)
-            .SingleOrDefaultAsync(like => like.Profile.UserName == username && like.PostId == postId);
-        if (like == null)
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var post = await _context.Posts
+            .Include(post => post.Profile)
+            .Include(post => post.ProfileLikes)
+            .SingleOrDefaultAsync(p => p.Id == id);
+        if (post == null)
         {
-            return BadRequest($"You can only dislike things you liked before!");
+            return BadRequest($"Post with id: {id} doesn't exist!");
         }
-
-        _context.PostLikes.Remove(like);
-        like.Post.Likes = like.Post.Likes - 1;
+ 
+        return Ok(new PostDto(post, userId));
+    }
+ 
+    [HttpPost]
+    public async Task<IActionResult> create(CreatePostDto postDto)
+    {
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null)
+        {
+            return BadRequest("Register or Login to create posts!");
+        }
+         
+        var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.Id == userId);
+        if (profile == null)
+        {
+            return BadRequest("Couldnt find profile");
+        }
+        
+        var newPost = new Post
+        {
+            Profile = profile,
+            Text = postDto.Text
+        };
+ 
+        await _context.Posts.AddAsync(newPost);
         await _context.SaveChangesAsync();
-        return Ok();
+        return Ok(new PostDto(newPost));
+    }   
+     
+    [HttpPost]
+    [Route("{postId}/comments")]
+    public async Task<IActionResult> AddComment(long postId,CreateCommentDto commentPayload)
+    {
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null)
+        {
+            return BadRequest("Couldnt find your id");
+        }       
+        
+        var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.Id == userId);
+        var post = await _context.Posts.SingleOrDefaultAsync(p => p.Id == postId);
+        if (profile == null || post == null)
+        {
+            return BadRequest("Couldnt find profile or post");
+        }       
+        
+        var newComment = new Comment
+        {
+            Profile = profile,
+            Post = post,
+            Text = commentPayload.Text
+        };
+
+        await _context.Comments.AddAsync(newComment);
+        await _context.SaveChangesAsync();
+        return Ok(new CommentDto(newComment));
     }
 
     [HttpPost]
     [Route("{postId}/likes")]
     public async Task<IActionResult> Like(long postId)
     {
-        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
-        var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.UserName == username);
-        var post = await _context.Posts.SingleOrDefaultAsync(post => post.Id == postId);
-        if (post == null || profile == null)
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null)
         {
-            return BadRequest($"Post with id: {postId} doesn't exist! User {username} doesn't exist");
+            return BadRequest("Couldnt find your id");
+        }       
+         
+        var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.Id == userId);
+        var post = await _context.Posts.SingleOrDefaultAsync(p => p.Id == postId);
+        if (profile == null || post == null)
+        {
+            return BadRequest("Couldnt find profile or post");
         }
-
+        
         var newLike = new PostLike
         {
-            Profile = profile,
-            Post = post,
+            ProfileId = profile.Id,
+            PostId = post.Id
         };
 
         try
         {
             await _context.PostLikes.AddAsync(newLike);
-            post.Likes = post.Likes + 1;
             await _context.SaveChangesAsync();
-            return Ok(post);
+            return Ok();
         }
         catch (Exception e)
         {
@@ -152,16 +241,14 @@ public class PostController : ControllerBase
             .SingleOrDefaultAsync(p => p.Id == id && p.Profile.UserName == username );
         if (post == null)
         {
-            return BadRequest($"Post with id: {id} doesn't exist or it's not your post! {username} name");
+            return BadRequest($"Post with id: {id} doesn't exist or it's not your post!");
         }
 
         try
         {
             post.Text = postDto.Text;
-            post.Title = postDto.Title;
-            _context.Entry(post).CurrentValues.SetValues(new { Text = postDto.Text, Title = post.Title });
             await _context.SaveChangesAsync();
-            return Ok(post);
+            return Ok(new PostDto(post));
         }
         catch (Exception e)
         {
@@ -185,7 +272,6 @@ public class PostController : ControllerBase
 
         try
         {
-
             _context.Posts.Remove(post);
             await _context.SaveChangesAsync();
             return Ok();
@@ -196,79 +282,20 @@ public class PostController : ControllerBase
         }
     }
 
-    [HttpGet]
-    [Route("{id}")]
-    public async Task<IActionResult> getById(long id)
+    [HttpDelete]
+    [Route("{postId}/likes")]
+    public async Task<IActionResult> Dislike(long postId)
     {
-        var post = await _context.Posts
-            .Include(post => post.Profile)
-            .SingleOrDefaultAsync(p => p.Id == id);
-        if (post == null)
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var like = await _context.PostLikes
+            .SingleOrDefaultAsync(like => like.ProfileId == userId && like.PostId == postId);
+        if (like == null)
         {
-            return BadRequest($"Post with id: {id} doesn't exist!");
+            return BadRequest($"You can only dislike things you liked before!");
         }
 
-        return Ok(new PostDto(post));
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> create(CreatePostDto postDto)
-    {
-        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
-        if (username == null)
-        {
-            return BadRequest("Register or Login to create posts!");
-        }
-
-        var owner = await _context.Profiles
-            .SingleOrDefaultAsync(p => p.UserName == username);
-        if (owner == null)
-        {
-            return BadRequest($"Could not find your profile!");
-        }
-
-        var newPost = new Post
-        {
-            Profile = owner,
-            Title = postDto.Title,
-            Text = postDto.Text,
-            CreatedAt = DateTime.Now,
-            Likes = 0
-        };
-
-        var result = await _context.Posts.AddAsync(newPost);
+        _context.PostLikes.Remove(like);
         await _context.SaveChangesAsync();
-        return Ok(new PostDto(result.Entity));
-    }
-
-    [HttpGet]
-    [Route("feed")]
-    public async Task<IActionResult> Feed(int pageSize = 10, int pageNumber = 1,string sort = "new")
-    {
-        if (sort != "new" && sort != "popular")
-        {
-            return BadRequest("Sort can either be new or popular!");
-        }
-
-        //if (sort == "new")
-        var responseQuery = _context.Posts
-            .Include(post => post.Profile)
-            .OrderByDescending(p => p.CreatedAt)
-            .Select(post => new PostDto(post));
-        
-        var len = responseQuery.Count();
-        var validFilter = new PaginationFilter(pageSize, len);
-        validFilter.SetCurrentPage(pageNumber);
-        var response = await responseQuery
-             .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
-             .Take(validFilter.PageSize)
-             .ToListAsync();                   
-        
-        return Ok(new
-        {
-            currentPage = validFilter.CurrentPage,
-            lastPage = validFilter.LastPage,
-            posts = response
-        });
+        return Ok();
     }
 }

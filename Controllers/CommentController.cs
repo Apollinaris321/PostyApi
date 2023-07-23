@@ -25,11 +25,15 @@ public class CommentController : ControllerBase
     [Route("{id}")]
     public async Task<IActionResult> ById(long id)
     {
-        var comment = await _context.Comments.Include(c => c.Profile).SingleOrDefaultAsync(c => c.Id == id);
+        var comment = await _context.Comments
+            .Include(c => c.Profile)
+            .SingleOrDefaultAsync(c => c.Id == id);
+        
         if (comment == null)
         {
             return BadRequest($"Comment with this id: {id} doesn't exist!");
         }
+        
         return Ok(new CommentDto(comment));
     }
 
@@ -39,68 +43,6 @@ public class CommentController : ControllerBase
         return Ok(await _context.Comments
             .Select(c => new CommentDto(c))
             .ToListAsync());
-    }
-    
-    [HttpPut]
-    [Route("{id}")]
-    public async Task<IActionResult> update(long id, CreateCommentDto commentDto)
-    {
-        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
-        var comment = await _context.Comments
-            .Include(c => c.Profile)
-            .SingleOrDefaultAsync(c => c.Id == id && c.Profile.UserName == username);
-        if (comment == null)
-        {
-            return BadRequest($"Comment doesn't exist or doesn't belong to you! id: {id}");
-        }
-
-        comment.Text = commentDto.Text;
-        await _context.SaveChangesAsync();
-        return Ok(new CommentDto(comment));
-    }
-
-    [HttpDelete]
-    [Route("{id}")]
-    public async Task<IActionResult> delete(long id)
-    {
-        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
-        var comment = await _context.Comments
-            .Include(c => c.Profile)
-            .Include(c => c.Post)
-            .SingleOrDefaultAsync(c => c.Id == id && c.Profile.UserName == username);
-        if (comment == null)
-        {
-            return BadRequest($"Comment doesn't exist or doesn't belong to you! id: {id}");
-        }
-        _context.Comments.Remove(comment);
-        await _context.SaveChangesAsync();
-        return Ok();
-    }
-
-    [HttpDelete]
-    [Route("{commentId}/likes")]
-    public async Task<IActionResult> Dislike(long commentId)
-    {
-        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
-        var like = await _context.CommentLikes
-            .Include(c => c.Comment)
-            .Include(p => p.Profile)
-            .SingleOrDefaultAsync(c => c.CommentId == commentId && c.Profile.UserName == username);
-        if (like == null)
-        {
-            return BadRequest($"You can only dislike things you liked!");
-        }
-        try
-        {
-            _context.CommentLikes.Remove(like);
-            like.Comment.Likes = like.Comment.Likes - 1;
-            await _context.SaveChangesAsync();
-            return Ok();
-        }
-        catch (Exception e)
-        {
-            return BadRequest("Something went wrong when removing the like...");
-        }
     }
     
     [HttpPost]
@@ -124,7 +66,6 @@ public class CommentController : ControllerBase
         try
         {
             var result = await _context.CommentLikes.AddAsync(commentLike);
-            comment.Likes = comment.Likes + 1;
             await _context.SaveChangesAsync();
             return Ok();
         }
@@ -133,4 +74,66 @@ public class CommentController : ControllerBase
             return BadRequest("You can only like comments once!");
         }
     }
+     
+    [HttpPut]
+    [Route("{id}")]
+    public async Task<IActionResult> update(long id, CreateCommentDto commentDto)
+    {
+        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
+        var comment = await _context.Comments
+            .Include(c => c.Profile)
+            .SingleOrDefaultAsync(c => c.Id == id && c.Profile.UserName == username);
+        if (comment == null)
+        {
+            return BadRequest($"Comment doesn't exist or doesn't belong to you! id: {id}");
+        }
+
+        comment.Text = commentDto.Text;
+        await _context.SaveChangesAsync();
+        return Ok(new CommentDto(comment));
+    }
+ 
+    [HttpDelete]
+    [Route("{commentId}/likes")]
+    public async Task<IActionResult> Dislike(long commentId)
+    {
+        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
+        var like = await _context.CommentLikes
+            .Include(c => c.Comment)
+            .Include(p => p.Profile)
+            .SingleOrDefaultAsync(c => c.CommentId == commentId && c.Profile.UserName == username);
+        if (like == null)
+        {
+            return BadRequest($"You can only dislike things you liked!");
+        }
+        try
+        {
+            _context.CommentLikes.Remove(like);
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest("Something went wrong when removing the like...");
+        }
+    }   
+    
+    [HttpDelete]
+    [Route("{id}")]
+    public async Task<IActionResult> delete(long id)
+    {
+        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
+        var comment = await _context.Comments
+            .Include(c => c.Profile)
+            .Include(c => c.Post)
+            .SingleOrDefaultAsync(c => c.Id == id && c.Profile.UserName == username);
+        if (comment == null)
+        {
+            return BadRequest($"Comment doesn't exist or doesn't belong to you! id: {id}");
+        }
+        _context.Comments.Remove(comment);
+        await _context.SaveChangesAsync();
+        return Ok();
+    }
+   
 }

@@ -12,7 +12,6 @@ public class Post
     [ForeignKey("Profile")]
     public string ProfileId { get; set; }
     public Profile Profile { get; set; }
-    public string Title { get; set; }
     public string Text { get; set; }
     public DateTime CreatedAt { get; set; }
     public int Likes { get; set; }

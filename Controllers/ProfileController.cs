@@ -83,16 +83,20 @@ namespace LearnApi.Controllers
         }
         
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> GetAllProfiles()
         {
-            var profileList = await _context.Profiles.Select(p => new ProfileDto(p)).ToListAsync();
-            return Ok(profileList);
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var profile = await _context.Profiles
+                .SingleOrDefaultAsync(p => p.Id == userId);
+            return Ok(new ProfileDto(profile));
         }
 
         [HttpGet]
         [Route("{username}/comments")]
         public async Task<IActionResult> GetProfileComments(string username, int pageNumber = 1, int pageSize = 10)
         {
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var len = _context.Comments
                 .Count(comment => comment.Profile.UserName == username);
             var validFilter = new PaginationFilter(pageSize, len);
@@ -100,8 +104,9 @@ namespace LearnApi.Controllers
                          
             var comments = await _context.Comments
                 .Include(c => c.Profile)
+                .Include(c => c.LikedBy)
                 .Where(c => c.Profile.UserName == username)
-                .Select(c => new CommentDto(c))
+                .Select(c => new CommentDto(c, userId))
                 .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
                 .Take(validFilter.PageSize)
                 .ToListAsync();
@@ -117,6 +122,7 @@ namespace LearnApi.Controllers
         [Route("{username}/posts")]
         public async Task<IActionResult> GetProfilePosts(string username, int pageSize = 10, int pageNumber = 1)
         {
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var len = _context.Posts
                 .Count(post => post.Profile.UserName == username);
             var validFilter = new PaginationFilter(pageSize, len);
@@ -124,9 +130,10 @@ namespace LearnApi.Controllers
              
             var posts = await _context.Posts
                 .Include(p => p.Profile)
+                .Include(p => p.ProfileLikes)
                 .Where(post => post.Profile.UserName == username)
                 .OrderByDescending(post => post.CreatedAt)
-                .Select(post => new PostDto(post))
+                .Select(post => new PostDto(post, userId))
                 .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
                 .Take(validFilter.PageSize)
                 .ToListAsync();
