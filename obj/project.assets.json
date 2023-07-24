@@ -13092,13 +13092,14 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\blura\\Desktop\\MathServer\\LearnApi.csproj",
-      "projectName": "LearnApi",
-      "projectPath": "C:\\Users\\blura\\Desktop\\MathServer\\LearnApi.csproj",
+      "projectUniqueName": "C:\\Users\\blura\\Desktop\\MathServer\\PostyApi.csproj",
+      "projectName": "PostyApi",
+      "projectPath": "C:\\Users\\blura\\Desktop\\MathServer\\PostyApi.csproj",
       "packagesPath": "C:\\Users\\blura\\.nuget\\packages\\",
       "outputPath": "C:\\Users\\blura\\Desktop\\MathServer\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
+        "C:\\Users\\blura\\Desktop\\NuGet.Config",
         "C:\\Users\\blura\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
@@ -13197,7 +13198,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.202\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.203\\RuntimeIdentifierGraph.json"
       }
     }
   }

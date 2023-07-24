@@ -10,11 +10,11 @@ namespace LearnApi.Controllers;
 [Route("api/[controller]")]
 public class CommentController : ControllerBase
 {
-    private readonly TodoContext _context;
+    private readonly PostyContext _context;
     private readonly IConfiguration _configuration;
     private readonly UserManager<Profile> _userManager;
 
-    public CommentController(TodoContext context, IConfiguration configuration, UserManager<Profile> userManager)
+    public CommentController(PostyContext context, IConfiguration configuration, UserManager<Profile> userManager)
     {
         _context = context;
         _configuration = configuration;

@@ -17,13 +17,13 @@ namespace LearnApi.Controllers
     [ApiController]
     public class ProfileController : ControllerBase
     {
-        private readonly TodoContext _context;
+        private readonly PostyContext _context;
         private readonly IConfiguration _configuration;
         private readonly UserManager<Profile> _userManager;
         private readonly SignInManager<Profile> _signInManager;
 
         public ProfileController(
-            TodoContext context,
+            PostyContext context,
             IConfiguration configuration,
             UserManager<Profile> userManager,
             SignInManager<Profile> signInManager)

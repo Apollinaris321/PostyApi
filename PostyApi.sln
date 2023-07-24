@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LearnApi", "LearnApi.csproj", "{BCFDB4CF-0C55-488E-8067-F248D952D69D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostyApi", "PostyApi.csproj", "{BCFDB4CF-0C55-488E-8067-F248D952D69D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

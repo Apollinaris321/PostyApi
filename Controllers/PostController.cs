@@ -11,11 +11,11 @@ namespace LearnApi.Controllers;
 [Route("api/[controller]")]
 public class PostController : ControllerBase
 {
-    private readonly TodoContext _context;
+    private readonly PostyContext _context;
     private readonly IConfiguration _configuration;
     private readonly UserManager<Profile> _userManager;
 
-    public PostController(TodoContext context, IConfiguration configuration, UserManager<Profile> userManager)
+    public PostController(PostyContext context, IConfiguration configuration, UserManager<Profile> userManager)
     {
         _context = context;
         _configuration = configuration;

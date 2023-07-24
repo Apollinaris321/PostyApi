@@ -1,4 +1,4 @@
-namespace LearnApi;
+﻿namespace LearnApi;
 
 public class WeatherForecast
 {

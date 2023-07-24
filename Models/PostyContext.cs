@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LearnApi.Models;
-public class TodoContext : IdentityDbContext<IdentityUser>
+public class PostyContext : IdentityDbContext<IdentityUser>
 {
-    public TodoContext(DbContextOptions<TodoContext> options)
+    public PostyContext(DbContextOptions<PostyContext> options)
         : base(options)
     {
         
