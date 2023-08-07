@@ -21,7 +21,7 @@ public class CommentDto
           Id = comment.Id;
           Text = comment.Text;
           CreatedAt = comment.CreatedAt;
-          AuthorName = comment.Profile.UserName ?? "EMPTY";
+          AuthorName = comment.Profile.Username ?? "EMPTY";
           PostId = comment.PostId;
           Likes = comment.LikedBy.Count;
           LikedByYou = false;
@@ -32,7 +32,7 @@ public class CommentDto
           Id = comment.Id;
           Text = comment.Text;
           CreatedAt = comment.CreatedAt;
-          AuthorName = comment.Profile.UserName ?? "EMPTY";
+          AuthorName = comment.Profile.Username ?? "EMPTY";
           PostId = comment.PostId;
           Likes = comment.LikedBy.Count;
           if (comment.LikedBy.FirstOrDefault(like => like.ProfileId == profileId) != null)

@@ -1,6 +1,12 @@
 using LearnApi.Models;
+using LearnApi.Repositories;
+using LearnApi.Services;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,8 +38,8 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<PostyContext>(opt =>
     opt.UseInMemoryDatabase("PostyDb"));
 
-builder.Services.AddIdentity<Profile, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = false)
-    .AddEntityFrameworkStores<PostyContext>();
+// builder.Services.AddIdentity<Profile, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = false)
+//    .AddEntityFrameworkStores<PostyContext>();
 
 builder.Services.Configure<IdentityOptions>(options =>
 {
@@ -64,6 +70,10 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+    
 var app = builder.Build();
 
 using(var scope = app.Services.CreateScope())
@@ -92,3 +102,5 @@ app.UseAuthorization( );
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

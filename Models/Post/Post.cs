@@ -10,7 +10,7 @@ public class Post
 {
     public long Id { get; set; }
     [ForeignKey("Profile")]
-    public string ProfileId { get; set; }
+    public long ProfileId { get; set; }
     public Profile Profile { get; set; }
     public string Text { get; set; }
     public DateTime CreatedAt { get; set; }

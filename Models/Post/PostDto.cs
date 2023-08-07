@@ -13,11 +13,11 @@ public class PostDto
      
      public PostDto(){}
 
-     public PostDto(Post post, string profileId)
+     public PostDto(Post post, long profileId)
      {
           Id = post.Id;
           Text = post.Text;
-          AuthorName = post.Profile.UserName ?? "";
+          AuthorName = post.Profile.Username ?? "";
           CreatedAt = post.CreatedAt;
           Likes = post.ProfileLikes.Count;
           if (post.ProfileLikes.FirstOrDefault(like => like.ProfileId == profileId) != null)
@@ -30,7 +30,7 @@ public class PostDto
      {
           Id = post.Id;
           Text = post.Text;
-          AuthorName = post.Profile.UserName ?? "";
+          AuthorName = post.Profile.Username ?? "";
           CreatedAt = post.CreatedAt;
           Likes = post.ProfileLikes.Count;
           LikedByYou = false;

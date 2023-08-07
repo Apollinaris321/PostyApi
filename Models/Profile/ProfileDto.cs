@@ -8,7 +8,7 @@ public class ProfileDto
 
     public ProfileDto(Profile p)
     {
-        Username = p.UserName ?? "empty";
+        Username = p.Username ?? "empty";
         Email = p.Email ?? "empty";           
     }
 }

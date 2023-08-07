@@ -1,15 +1,9 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LearnApi.Models;
 using LearnApi.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.IdentityModel.Tokens;
 
 namespace LearnApi.Controllers
 {
@@ -18,77 +12,21 @@ namespace LearnApi.Controllers
     public class ProfileController : ControllerBase
     {
         private readonly PostyContext _context;
-        private readonly IConfiguration _configuration;
-        private readonly UserManager<Profile> _userManager;
-        private readonly SignInManager<Profile> _signInManager;
 
         public ProfileController(
-            PostyContext context,
-            IConfiguration configuration,
-            UserManager<Profile> userManager,
-            SignInManager<Profile> signInManager)
+            PostyContext context
+            )
         {
             _context = context;
-            _configuration = configuration;
-            _userManager = userManager;
-            _signInManager = signInManager;
         }
-
-        [HttpPost]
-        [Route("register")]
-        public async Task<ActionResult<ProfileDto>> Register(RegisterDto registerDto)
-        {
-            var newProfile = new Profile{
-                UserName = registerDto.Username, 
-                Email = registerDto.Email, 
-                
-            };
-            var registerResult = await _userManager.CreateAsync(newProfile, registerDto.Password);
-            if (registerResult.Succeeded)
-            {
-                await _signInManager.SignInAsync(newProfile, isPersistent: false);
-                return Ok(new ProfileDto(newProfile));
-            }
-
-            var errorString = "";
-            foreach (var error in registerResult.Errors)
-            {
-                errorString += error.Description + " ,";
-            }
-            return BadRequest(new {errors = new {Register = $"Failed to register: {errorString}"}});
-        }
-        
-        [HttpPost]
-        [Route("login")]
-        public async Task<IActionResult> Login(LoginDto loginDto)
-        {
-            var user = await _userManager.FindByNameAsync(loginDto.Username);
-            if (user != null)
-            {
-                var signInResult = await _signInManager.PasswordSignInAsync(user, loginDto.Password, false ,false);
-                if (signInResult.Succeeded)
-                {
-                    return Ok(new ProfileDto(user));
-                }
-            }
-            return BadRequest(new {errors = new {Login = "Wrong password or Username!"}});
-        }
-
-        [Authorize]
-        [HttpGet("logout")]
-        public async Task<IActionResult> Logout()
-        {
-            await _signInManager.SignOutAsync();
-            return Ok();
-        }
-        
+       
         [HttpGet]
         [Authorize]
         public async Task<IActionResult> GetAllProfiles()
         {
             var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var profile = await _context.Profiles
-                .SingleOrDefaultAsync(p => p.Id == userId);
+                .SingleOrDefaultAsync(p => p.Id.ToString() == userId);
             return Ok(new ProfileDto(profile));
         }
 
@@ -98,14 +36,14 @@ namespace LearnApi.Controllers
         {
             var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var len = _context.Comments
-                .Count(comment => comment.Profile.UserName == username);
+                .Count(comment => comment.Profile.Username == username);
             var validFilter = new PaginationFilter(pageSize, len);
             validFilter.SetCurrentPage(pageNumber);
                          
             var comments = await _context.Comments
                 .Include(c => c.Profile)
                 .Include(c => c.LikedBy)
-                .Where(c => c.Profile.UserName == username)
+                .Where(c => c.Profile.Username == username)
                 .Select(c => new CommentDto(c, userId))
                 .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
                 .Take(validFilter.PageSize)
@@ -124,16 +62,16 @@ namespace LearnApi.Controllers
         {
             var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var len = _context.Posts
-                .Count(post => post.Profile.UserName == username);
+                .Count(post => post.Profile.Username == username);
             var validFilter = new PaginationFilter(pageSize, len);
             validFilter.SetCurrentPage(pageNumber);
              
             var posts = await _context.Posts
                 .Include(p => p.Profile)
                 .Include(p => p.ProfileLikes)
-                .Where(post => post.Profile.UserName == username)
+                .Where(post => post.Profile.Username == username)
                 .OrderByDescending(post => post.CreatedAt)
-                .Select(post => new PostDto(post, userId))
+                .Select(post => new PostDto(post, long.Parse(userId)))
                 .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
                 .Take(validFilter.PageSize)
                 .ToListAsync();
@@ -149,12 +87,12 @@ namespace LearnApi.Controllers
         [HttpGet("{username}")]
         public async Task<ActionResult<Profile>> GetProfile(string username)
         {
-            var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.UserName == username);
+            var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.Username == username);
             if (profile == null)
             {
                 return NotFound("error could not find profile!");
             }
-            return Ok(new ProfileDto(profile));
+            return Ok(profile);
         }
         
         // TODO can only delete your own profile
@@ -168,7 +106,7 @@ namespace LearnApi.Controllers
             {
                 //return BadRequest("Can't delete other peoples profiles!");
             }
-            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.UserName == username);
+            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.Username == username);
             if (profile == null)
             {
                 return NotFound();

@@ -4,6 +4,7 @@ using LearnApi.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace LearnApi.Controllers;
 
@@ -37,7 +38,7 @@ public class PostController : ControllerBase
                 .Include(post => post.Profile)
                 .Include(post => post.ProfileLikes)
                 .OrderByDescending(p => p.CreatedAt)
-                .Select(post => new PostDto(post, userId))
+                .Select(post => new PostDto(post, long.Parse(userId)))
                 .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
                 .Take(validFilter.PageSize)
                 .ToListAsync();                   
@@ -55,7 +56,7 @@ public class PostController : ControllerBase
                  .Include(post => post.Profile)
                  .Include(post => post.ProfileLikes)
                  .OrderByDescending(p => p.CreatedAt)
-                 .Select(post => new PostDto(post, userId))
+                 .Select(post => new PostDto(post, long.Parse(userId)))
                  .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
                  .Take(validFilter.PageSize)
                  .ToListAsync();                   
@@ -112,17 +113,17 @@ public class PostController : ControllerBase
         return BadRequest("Order can be either date or likes. Yours was: " + order);
     }
 
-    [HttpGet]
-    [Route("{postId}/likes")]
-    public async Task<IActionResult> GetLikes(long postId)
-    {
-        var likes = await _context.PostLikes
-            .Include(like => like.Profile)
-            .Where(like => like.PostId == postId)
-            .Select(l => new { Username = l.Profile.UserName})
-            .ToListAsync();
-        return Ok(likes);
-    }
+    // [HttpGet]
+    // [Route("{postId}/likes")]
+    // public async Task<IActionResult> GetLikes(long postId)
+    // {
+    //     var likes = await _context.PostLikes
+    //         .Include(like => like.Profile)
+    //         .Where(like => like.PostId == postId)
+    //         .Select(l => new { Username = l.Profile.Username})
+    //         .ToListAsync();
+    //     return Ok(likes);
+    // }
     
     [HttpGet]
     [Route("{id}")]
@@ -138,7 +139,7 @@ public class PostController : ControllerBase
             return BadRequest($"Post with id: {id} doesn't exist!");
         }
  
-        return Ok(new PostDto(post, userId));
+        return Ok(new PostDto(post, long.Parse(userId)));
     }
  
     [HttpPost]
@@ -150,7 +151,7 @@ public class PostController : ControllerBase
             return BadRequest("Register or Login to create posts!");
         }
          
-        var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.Id == userId);
+        var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.Id.ToString() == userId);
         if (profile == null)
         {
             return BadRequest("Couldnt find profile");
@@ -177,7 +178,7 @@ public class PostController : ControllerBase
             return BadRequest("Couldnt find your id");
         }       
         
-        var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.Id == userId);
+        var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.Id.ToString() == userId);
         var post = await _context.Posts.SingleOrDefaultAsync(p => p.Id == postId);
         if (profile == null || post == null)
         {
@@ -206,7 +207,7 @@ public class PostController : ControllerBase
             return BadRequest("Couldnt find your id");
         }       
          
-        var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.Id == userId);
+        var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.Id.ToString() == userId);
         var post = await _context.Posts.SingleOrDefaultAsync(p => p.Id == postId);
         if (profile == null || post == null)
         {
@@ -238,7 +239,7 @@ public class PostController : ControllerBase
         var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
         var post = await _context.Posts
             .Include(p => p.Profile)
-            .SingleOrDefaultAsync(p => p.Id == id && p.Profile.UserName == username );
+            .SingleOrDefaultAsync(p => p.Id == id && p.Profile.Username == username );
         if (post == null)
         {
             return BadRequest($"Post with id: {id} doesn't exist or it's not your post!");
@@ -264,7 +265,7 @@ public class PostController : ControllerBase
         var post = await _context.Posts
             .Include(p => p.Profile)
             .Include(p => p.Comments)
-            .SingleOrDefaultAsync(p => p.Id == id && p.Profile.UserName == username);
+            .SingleOrDefaultAsync(p => p.Id == id && p.Profile.Username == username);
         if (post == null)
         {
             return BadRequest($"Post with id: {id} doesn't exist or you didn't own this post!");
@@ -288,7 +289,7 @@ public class PostController : ControllerBase
     {
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var like = await _context.PostLikes
-            .SingleOrDefaultAsync(like => like.ProfileId == userId && like.PostId == postId);
+            .SingleOrDefaultAsync(like => like.ProfileId == long.Parse(userId) && like.PostId == postId);
         if (like == null)
         {
             return BadRequest($"You can only dislike things you liked before!");

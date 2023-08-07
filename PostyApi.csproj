@@ -9,22 +9,38 @@
     </PropertyGroup>
 
     <ItemGroup>
+
+        <InternalsVisibleTo Include="PostyTest" />
+
+        <PackageReference Include="AutoMapper" Version="12.0.1" />
+
+        <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
         <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.7" />
-        <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="7.0.7" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.7" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0-preview.4.23259.3" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.7" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.7" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.7">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="7.0.4" />
         <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="7.0.8" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.0" />
+        <PackageReference Include="Microsoft.TestPlatform.TestHost" Version="17.7.0" />
         <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="7.0.7" />
+        <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
+        <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+        <PackageReference Include="xunit.assert" Version="2.4.2" />
+        <PackageReference Include="xunit.extensibility.core" Version="2.4.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="PostyTest\obj\PostyTest.csproj.nuget.dgspec.json" />
+      <_ContentIncludedByDefault Remove="PostyTest\obj\project.assets.json" />
+      <_ContentIncludedByDefault Remove="PostyTest\obj\project.packagespec.json" />
+      <_ContentIncludedByDefault Remove="PostyTest\bin\Debug\net7.0\PostyTest.deps.json" />
+      <_ContentIncludedByDefault Remove="PostyTest\bin\Debug\net7.0\PostyTest.runtimeconfig.json" />
     </ItemGroup>
 
 </Project>
