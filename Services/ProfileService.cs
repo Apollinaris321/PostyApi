@@ -77,12 +77,13 @@ public class ProfileService : IProfileService
         return response;
     }
 
-    public async Task<ServiceResponse<ProfileDto>> Add(ProfileDto newProfile)
+    public async Task<ServiceResponse<ProfileDto>> Add(RegisterDto newProfile)
     {
         var response = new ServiceResponse<ProfileDto>();
         var profile = new Profile
         {
             Username = newProfile.Username,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(newProfile.Password),
             Email = newProfile.Email
         };
 

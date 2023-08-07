@@ -113,7 +113,6 @@ namespace LearnApi.Controllers
             }
 
             _context.Profiles.Remove(profile);
-            await _context.SaveChangesAsync();
 
             return NoContent();
         }       

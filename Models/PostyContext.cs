@@ -1,11 +1,10 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.CodeAnalysis.Elfie.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LearnApi.Models;
-public class PostyContext : IdentityDbContext<IdentityUser>
+public class PostyContext : DbContext
 {
     public PostyContext(DbContextOptions<PostyContext> options)
         : base(options)

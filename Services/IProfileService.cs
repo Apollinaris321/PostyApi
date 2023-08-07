@@ -10,6 +10,6 @@ public interface IProfileService
     Task <ServiceResponse<ProfileDto>> Update(ProfileDto newProfile);
     Task <ServiceResponse<ProfileDto>> Get(long id);
     Task <ServiceResponse<ICollection<ProfileDto>>> GetAll();
-    Task <ServiceResponse<ProfileDto>> Add(ProfileDto profile);
+    Task <ServiceResponse<ProfileDto>> Add(RegisterDto profile);
     Task <ServiceResponse<Boolean>> Delete(long id);
 }

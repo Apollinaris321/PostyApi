@@ -164,7 +164,6 @@ public class PostController : ControllerBase
         };
  
         await _context.Posts.AddAsync(newPost);
-        await _context.SaveChangesAsync();
         return Ok(new PostDto(newPost));
     }   
      
@@ -223,7 +222,6 @@ public class PostController : ControllerBase
         try
         {
             await _context.PostLikes.AddAsync(newLike);
-            await _context.SaveChangesAsync();
             return Ok();
         }
         catch (Exception e)
@@ -248,7 +246,6 @@ public class PostController : ControllerBase
         try
         {
             post.Text = postDto.Text;
-            await _context.SaveChangesAsync();
             return Ok(new PostDto(post));
         }
         catch (Exception e)
