@@ -40,10 +40,7 @@ public class PostController : ControllerBase
                 posts = response.Data
             });            
         }
-        else
-        {
-            return BadRequest(response.Error);
-        }
+        return BadRequest(response.Error);
     }
     
     [HttpGet]
