@@ -41,6 +41,7 @@ public class PostController : ControllerBase
             });            
         }
         return BadRequest(response.Error);
+        Console.WriteLine("ciao");
     }
     
     [HttpGet]
