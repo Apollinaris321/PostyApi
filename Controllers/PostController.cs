@@ -43,6 +43,7 @@ public class PostController : ControllerBase
 
         Console.WriteLine("Hello");
         return BadRequest(response.Error);
+        Console.WriteLine("ciao");
     }
     
     [HttpGet]
