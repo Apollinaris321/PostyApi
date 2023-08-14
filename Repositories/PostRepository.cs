@@ -15,6 +15,7 @@ public class PostRepository : IPostRepository
     public async Task<Post> Insert(Post post)
     {
         var addedPost = await _context.Posts.AddAsync(post);
+        await _context.SaveChangesAsync();
         return addedPost.Entity;
     }
 
@@ -46,26 +47,8 @@ public class PostRepository : IPostRepository
             return false;
         }
         _context.Posts.Remove(post);
+        await _context.SaveChangesAsync();
         return true;
-    }
-
-
-    public async Task<ICollection<Post>> GetByUsername(string username, int pageSize = 10, int pageNumber = 1)
-    {
-        return await _context.Posts
-                .Include(post => post.Profile)
-                .Include(post => post.ProfileLikes)
-                .Where(post => post.Profile.Username == username)
-                .OrderByDescending(p => p.CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();                   
-    }
-
-    public int GetByUsernameLength(string username)
-    {
-        return _context.Posts
-            .Count(post => post.Profile.Username == username);
     }
 
     public async Task<Post?> Get(long id)
@@ -75,7 +58,42 @@ public class PostRepository : IPostRepository
             .Include(p => p.ProfileLikes)
             .SingleOrDefaultAsync(p => p.Id == id);
     }
+    
+    public async Task<ICollection<Post>> GetByUsername(string username, int offset = 0, int take = 10)
+    {
+        return await _context.Posts
+                .Include(post => post.Profile)
+                .Include(post => post.ProfileLikes)
+                .Where(post => post.Profile.Username == username)
+                .OrderByDescending(p => p.CreatedAt)
+                .Skip(offset)
+                .Take(take)
+                .ToListAsync();                   
+    }
 
+    public int GetByUsernameLength(string username)
+    {
+        return _context.Posts
+            .Count(post => post.Profile.Username == username);
+    }
+    
+    public async Task<ICollection<Post>> GetAll(int offset = 1, int take = 10)
+    {
+        return await _context.Posts
+                .Include(post => post.Profile)
+                .Include(post => post.ProfileLikes)
+                .OrderByDescending(p => p.CreatedAt)
+                .Skip(offset)
+                .Take(take)
+                .ToListAsync();    
+    }
+
+    public int GetAllLength()
+    {
+        return _context.Posts
+            .Count();
+    }
+    
     public async void Like(long postId, long profileId)
     {
         var like = new PostLike
@@ -94,21 +112,5 @@ public class PostRepository : IPostRepository
         _context.PostLikes.Remove(like);
         await _context.SaveChangesAsync();
     }
-    
-    public async Task<ICollection<Post>> GetAll(int pageNumber = 1, int pageSize = 10)
-    {
-        return await _context.Posts
-                .Include(post => post.Profile)
-                .Include(post => post.ProfileLikes)
-                .OrderByDescending(p => p.CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();    
-    }
 
-    public int GetAllLength()
-    {
-        return _context.Posts
-            .Count();
-    }
 }

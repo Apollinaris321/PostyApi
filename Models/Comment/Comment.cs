@@ -12,7 +12,7 @@ public class Comment
     [JsonIgnore]
     public ICollection<CommentLike> LikedBy { get; set; }
     public DateTime CreatedAt { get; set; }   
-    public string ProfileId { get; set; }
+    public long ProfileId { get; set; }
     [JsonIgnore]
     public Profile Profile { get; set; }
     public long PostId { get; set; }

@@ -1,4 +1,5 @@
-﻿using Humanizer.DateTimeHumanizeStrategy;
+﻿using System.Configuration;
+using Humanizer.DateTimeHumanizeStrategy;
 
 namespace LearnApi.Services;
 
@@ -7,12 +8,14 @@ public class PaginationFilter
     public int CurrentPage { get; set; }
     public int LastPage { get; set; }
     public int PageSize { get; set; }
+    public int Offset { get; set; }
 
     public PaginationFilter()
     {
         this.LastPage = 1;
         this.CurrentPage = 1;
         this.PageSize = 10;
+        this.Offset = 1;
     }
 
     public PaginationFilter(int pageSize, int length)
@@ -40,14 +43,17 @@ public class PaginationFilter
         if (number > LastPage)
         {
             this.CurrentPage = this.LastPage;
+            this.Offset = (this.CurrentPage - 1) * this.PageSize;
         }
         else if (number < 1)
         {
             this.CurrentPage = 1;
+            this.Offset = 0;
         }
         else
         {
             this.CurrentPage = number;
+            this.Offset = (this.CurrentPage - 1) * this.PageSize;
         }
     }
 }

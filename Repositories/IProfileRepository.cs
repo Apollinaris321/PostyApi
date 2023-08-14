@@ -11,5 +11,6 @@ public interface IProfileRepository
     public Task<Profile?> Get(long id);
     public Task<Profile?> GetByUsername(string username);
     public Task<Profile?> GetBySessionId(string sessionId);
-    public Task<ICollection<Profile>> GetAll();
+    public Task<ICollection<Profile>> GetAll(int offset, int take);
+    public int GetAllLength();
 }

@@ -1,5 +1,7 @@
-﻿using LearnApi.Models;
+﻿using System.Collections;
+using LearnApi.Models;
 using LearnApi.Repositories;
+using LearnApi.Utils;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LearnApi.Services;
@@ -8,37 +10,35 @@ public class ProfileService : IProfileService
 {
     private readonly IProfileRepository _profileRepository;
     private readonly IPostRepository _postRepository;
+    private readonly ISessionValidator _sessionValidator;
 
     public ProfileService(
         IProfileRepository profileRepository,
-        IPostRepository postRepository
+        IPostRepository postRepository,
+        ISessionValidator sessionValidator
         )
     {
         _profileRepository = profileRepository;
         _postRepository = postRepository;
+        _sessionValidator = sessionValidator;
     }
 
-
-    public Task<IActionResult> GetComments(string username, int pageNumber = 1, int pageSize = 10)
-    { 
-        throw new NotImplementedException();
-    }
-
-    public Task<IActionResult> GetPosts(string username, int pageNumber = 1, int pageSize = 10)
-    {
-        throw new NotImplementedException();
-    }
-    
-    public async Task<ServiceResponse<ICollection<ProfileDto>>> GetAll()
+    public async Task<ServiceResponse<ICollection<ProfileDto>>> GetAll(int pageNumber = 1, int pageSize = 10)
     {
         ServiceResponse<ICollection<ProfileDto>> _response = new ServiceResponse<ICollection<ProfileDto>>();
+        var len = _profileRepository.GetAllLength();
+        var validFilter = new PaginationFilter(pageSize, len);
+        validFilter.SetCurrentPage(pageNumber);
+                              
         try
         {
-            var profileList = await _profileRepository.GetAll();
+            var profileList = await _profileRepository.GetAll(validFilter.Offset, validFilter.PageSize);
             var profileDtoList = profileList
                 .Select(p => new ProfileDto(p))
                 .ToList();
             _response.Data = profileDtoList;
+            _response.LastPage = validFilter.LastPage;
+            _response.CurrentPage = validFilter.CurrentPage;
             _response.Success = true;
             return _response;
         }
@@ -77,39 +77,45 @@ public class ProfileService : IProfileService
         return response;
     }
 
-    public async Task<ServiceResponse<ProfileDto>> Add(RegisterDto newProfile)
+    public async Task<ServiceResponse<ProfileDto>> GetByUsername(string username)
     {
-        var response = new ServiceResponse<ProfileDto>();
-        var profile = new Profile
-        {
-            Username = newProfile.Username,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(newProfile.Password),
-            Email = newProfile.Email
-        };
-
+        ServiceResponse<ProfileDto> response = new ServiceResponse<ProfileDto>();
         try
         {
-            var savedProfile = await _profileRepository.Insert(profile);
-            var profileDto = new ProfileDto(savedProfile);
+            var profile = await _profileRepository.GetByUsername(username);
+            if (profile == null)
+            {
+                response.Success = false;
+                response.Data = null;
+                response.Message = "Profile not found";
+                return response;
+            }
+
+            var profileDto = new ProfileDto(profile);
             response.Data = profileDto;
             response.Success = true;
             return response;
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            response.Error = e.Message;
             response.Success = false;
             return response;
         }
         return response;
     }
 
-
-    public async Task<ServiceResponse<ProfileDto>> Update(ProfileDto newProfile)
+    public async Task<ServiceResponse<ProfileDto>> Update(ProfileDto newProfile,string sessionId)
     {
         var response = new ServiceResponse<ProfileDto>();
+        var profile = await _sessionValidator.ValidateSession(sessionId);
         try
         {
+            if (profile == null)
+            {
+                response.Success = false;
+                response.Error = "Invalid session!";
+                return response;               
+            }           
             var savedProfile = await _profileRepository.Update(newProfile);
             var profileDto = new ProfileDto(savedProfile);
             response.Data = profileDto;
@@ -125,11 +131,18 @@ public class ProfileService : IProfileService
         return response;
     }
 
-    public async Task<ServiceResponse<bool>> Delete(long id)
+    public async Task<ServiceResponse<bool>> Delete(long id, string sessionId)
     {
         var response = new ServiceResponse<Boolean>();
+        var profile = await _sessionValidator.ValidateSession(sessionId);
         try
         {
+            if (profile == null)
+            {
+                response.Success = false;
+                response.Error = "Invalid session!";
+                return response;               
+            }
             var result = await _profileRepository.Delete(id);
             response.Success = result;
             return response;

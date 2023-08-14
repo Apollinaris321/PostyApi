@@ -27,7 +27,7 @@ public class CommentDto
           LikedByYou = false;
      }
      
-     public CommentDto(Comment comment, string? profileId)
+     public CommentDto(Comment comment, long? profileId)
      {
           Id = comment.Id;
           Text = comment.Text;

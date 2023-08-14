@@ -1,24 +1,31 @@
 using LearnApi.Models;
 using LearnApi.Repositories;
 using LearnApi.Services;
+using LearnApi.Utils;
 using Microsoft.EntityFrameworkCore;
 
 namespace PostyTest 
 {
-    public class UnitTest1 : IClassFixture<TestDatabaseFixture>
+    public class AuthTest : IClassFixture<TestDatabaseFixture>
     {
         private readonly PostyContext context;
         private readonly ProfileRepository profileRepository;
         private readonly AuthService authService;
+        private readonly SessionValidator sessionValidator;
+        private readonly PostRepository postRepository;
+        private readonly PostService postService;
 
-        public UnitTest1()
+        public AuthTest()
         {
             var optionsBuilder = new DbContextOptionsBuilder<PostyContext>()
-                 .UseInMemoryDatabase("PostyTest");
+                 .UseInMemoryDatabase("AuthTest");
             context = new PostyContext(optionsBuilder.Options);
              
             profileRepository = new ProfileRepository(context);
-            authService = new AuthService(profileRepository);            
+            sessionValidator = new SessionValidator(profileRepository);
+            authService = new AuthService(profileRepository, sessionValidator);
+            postRepository = new PostRepository(context);
+            postService = new PostService(postRepository, profileRepository, sessionValidator);
         }
 
         [Fact]
@@ -55,5 +62,6 @@ namespace PostyTest
             var result2 = await authService.Register(newUser);
             Assert.False(result2.Success);
         }       
+        
     }
 }

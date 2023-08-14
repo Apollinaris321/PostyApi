@@ -1,5 +1,6 @@
 ﻿using LearnApi.Models;
 using LearnApi.Services;
+using LearnApi.Utils;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LearnApi.Controllers;
@@ -9,12 +10,15 @@ namespace LearnApi.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly ISessionValidator _sessionValidator;
 
     public AuthController(
-        IAuthService authService
+        IAuthService authService,
+        ISessionValidator sessionValidator
         )
     {
         _authService = authService;
+        _sessionValidator = sessionValidator;
     }
  
     [HttpPost]

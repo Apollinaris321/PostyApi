@@ -2,6 +2,7 @@
 using AutoMapper;
 using LearnApi.Models;
 using LearnApi.Repositories;
+using LearnApi.Utils;
 
 namespace LearnApi.Services;
 
@@ -9,31 +10,31 @@ public class PostService : IPostService
 {
     private readonly IPostRepository _postRepository;
     private readonly IProfileRepository _profileRepository;
-    private readonly IMapper _mapper;
+    private readonly ISessionValidator _sessionValidator;
 
     public PostService(
         IPostRepository postRepository,
         IProfileRepository profileRepository,
-        IMapper mapper
+        ISessionValidator sessionValidator
         )
     {
         _postRepository = postRepository;
         _profileRepository = profileRepository;
-        _mapper = mapper;
+        _sessionValidator = sessionValidator;
     }
 
-    public async Task<ServiceResponse<IEnumerable<PostDto>>> GetAll(int pageNumber = 10, int pageSize = 10)
+    public async Task<ServiceResponse<IEnumerable<PostDto>>> GetAll(int pageNumber = 1, int pageSize = 10)
     {
         ServiceResponse<IEnumerable<PostDto>> response = new ServiceResponse<IEnumerable<PostDto>>();
-
         try
         { 
             var len = _postRepository.GetAllLength();
             var validFilter = new PaginationFilter(pageSize, len);
             validFilter.SetCurrentPage(pageNumber);           
             
-            var posts = await _postRepository.GetAll();
-            var postDtos = posts.Select(post => new PostDto(post));
+            var posts = await _postRepository.GetAll(validFilter.Offset, validFilter.PageSize);
+            var postDtos = posts
+                .Select(post => new PostDto(post));
 
             response.Data = postDtos;
             response.Success = true;
@@ -47,83 +48,31 @@ public class PostService : IPostService
         }
     }
 
-    public async Task<ServiceResponse<IEnumerable<PostDto>>> GetByUsername(string username, int pageNumber = 10, int pageSize = 10)
+    public async Task<ServiceResponse<IEnumerable<PostDto>>> GetByUsername(string username, int pageNumber = 1, int pageSize = 10)
     {
-        ServiceResponse<IEnumerable<PostDto>> response = new ServiceResponse<IEnumerable<PostDto>>();
-
-        try
-        { 
-            var len = _postRepository.GetByUsernameLength(username);
-            var validFilter = new PaginationFilter(pageSize, len);
-            validFilter.SetCurrentPage(pageNumber);           
-            
-            var posts = await _postRepository.GetByUsername(username);
-            var postDtos = posts.Select(post => new PostDto(post));
-
-            response.Data = postDtos;
-            response.Success = true;
-            return response;
-        }
-        catch (Exception e)
-        {
-            response.Error = e.Message;
-            response.Success = false;
-            return response;           
-        }
+         ServiceResponse<IEnumerable<PostDto>> response = new ServiceResponse<IEnumerable<PostDto>>();
+         try
+         { 
+             var len = _postRepository.GetByUsernameLength(username);
+             var validFilter = new PaginationFilter(pageSize, len);
+             validFilter.SetCurrentPage(pageNumber);           
+             
+             var posts = await _postRepository.GetByUsername(username, validFilter.Offset, validFilter.PageSize);
+             var postDtos = posts
+                 .Select(post => new PostDto(post));
+ 
+             response.Data = postDtos;
+             response.Success = true;
+             return response;
+         }
+         catch (Exception e)
+         {
+             response.Error = e.Message;
+             response.Success = false;
+             return response;           
+         }       
     }
 
-
-    public async Task<ServiceResponse<bool>> Like(long postId, string sessionId)
-    {
-        var response = new ServiceResponse<bool>();
-
-        try
-        {
-            var profile = await _profileRepository.GetBySessionId(sessionId);
-            if (profile == null)
-            {
-                response.Success = false;
-                response.Error = "User not found!";
-                return response;
-            }
-            
-            _postRepository.Like(postId, profile.Id);
-            response.Success = true;
-            return response;
-        }
-        catch (Exception e)
-        {
-            response.Success = false;
-            response.Error = "Failed to like post!";           
-            return response;
-        }
-    }
-
-    public async Task<ServiceResponse<bool>> Dislike(long postId, string sessionId)
-    {
-        var response = new ServiceResponse<bool>();
-
-        try
-        {
-            var profile = await _profileRepository.GetBySessionId(sessionId);
-            if (profile == null)
-            {
-                response.Success = false;
-                response.Error = "User not found!";
-                return response;
-            }
-            
-            _postRepository.Dislike(postId, profile.Id);
-            response.Success = true;
-            return response;
-        }
-        catch (Exception e)
-        {
-            response.Success = false;
-            response.Error = "Failed to like post!";           
-            return response;
-        }
-    }
 
     public async Task<ServiceResponse<PostDto>> GetById(long id)
     {
@@ -154,9 +103,9 @@ public class PostService : IPostService
     public async Task<ServiceResponse<PostDto>> Add(CreatePostDto newPost, string sessionId)
     {
         var response = new ServiceResponse<PostDto>();
+        var profile = await _sessionValidator.ValidateSession(sessionId);
         try
         {
-            var profile = await _profileRepository.GetBySessionId(sessionId);
             if (profile == null)
             {
                 response.Success = false;
@@ -185,12 +134,12 @@ public class PostService : IPostService
         }
     }
 
-    public async Task<ServiceResponse<PostDto>> Update(PostDto newPost, string sessionId)
+    public async Task<ServiceResponse<PostDto>> Update(long postId, CreatePostDto newPost, string sessionId)
     {
         var response = new ServiceResponse<PostDto>();
+        var profile = await _sessionValidator.ValidateSession(sessionId);
         try
         {
-            var profile = await _profileRepository.GetBySessionId(sessionId);
             if (profile == null)
             {
                 response.Success = false;
@@ -200,11 +149,12 @@ public class PostService : IPostService
             
             var post = new Post
             {
+                Id = postId,
                 Text = newPost.Text,
                 Profile = profile
                 
             };
-            post = await _postRepository.Insert(post);
+            post = await _postRepository.Update(post);
             
             var postDto = new PostDto(post);
             response.Data = postDto;
@@ -222,9 +172,9 @@ public class PostService : IPostService
     public async  Task<ServiceResponse<bool>> Delete(long id, string sessionId)
     {
          var response = new ServiceResponse<bool>();
+         var profile = await _sessionValidator.ValidateSession(sessionId);
          try
          {
-             var profile = await _profileRepository.GetBySessionId(sessionId);
              if (profile == null)
              {
                  response.Success = false;
@@ -244,8 +194,63 @@ public class PostService : IPostService
          }       
     }
     
-    public ServiceResponse<CommentDto> AddComment(long postId, CommentDto commentDto, string sessionId)
+    public Task<ServiceResponse<CommentDto>> AddComment(long postId, CreateCommentDto commentDto, string sessionId)
     {
         throw new NotImplementedException();
     }
+ 
+    public ServiceResponse<CommentDto> RemoveComment(long postId, CommentDto commentDto, string sessionId)
+    {
+        throw new NotImplementedException();
+    }   
+ 
+    public async Task<ServiceResponse<bool>> Like(long postId, string sessionId)
+    {
+        var response = new ServiceResponse<bool>();
+        var profile = await _sessionValidator.ValidateSession(sessionId);
+        try
+        {
+            if (profile == null)
+            {
+                response.Success = false;
+                response.Error = "User not found!";
+                return response;
+            }
+            
+            _postRepository.Like(postId, profile.Id);
+            response.Success = true;
+            return response;
+        }
+        catch (Exception e)
+        {
+            response.Success = false;
+            response.Error = "Failed to like post!";           
+            return response;
+        }
+    }
+
+    public async Task<ServiceResponse<bool>> Dislike(long postId, string sessionId)
+    {
+        var response = new ServiceResponse<bool>();
+        var profile = await _sessionValidator.ValidateSession(sessionId);
+        try
+        {
+            if (profile == null)
+            {
+                response.Success = false;
+                response.Error = "User not found!";
+                return response;
+            }
+            
+            _postRepository.Dislike(postId, profile.Id);
+            response.Success = true;
+            return response;
+        }
+        catch (Exception e)
+        {
+            response.Success = false;
+            response.Error = "Failed to like post!";           
+            return response;
+        }
+    }   
 }

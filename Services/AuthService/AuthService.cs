@@ -1,15 +1,21 @@
 ﻿using LearnApi.Models;
 using LearnApi.Repositories;
+using LearnApi.Utils;
 
 namespace LearnApi.Services;
 
 public class AuthService : IAuthService
 {
     private readonly IProfileRepository _profileRepository;
+    private readonly ISessionValidator _validator;
 
-    public AuthService(IProfileRepository profileRepository)
+    public AuthService(
+        IProfileRepository profileRepository,
+        ISessionValidator validator
+        )
     {
         _profileRepository = profileRepository;
+        _validator = validator;
     }
 
     public async Task<ServiceResponse<ProfileSessionDto>> Login(LoginDto loginDto)
@@ -17,7 +23,6 @@ public class AuthService : IAuthService
         var response = new ServiceResponse<ProfileSessionDto>();
         try
         {
-            Console.WriteLine("Logindot: " + loginDto.Username + ", " + loginDto.Password);
             var profile = await _profileRepository.GetByUsername(loginDto.Username);
             if (profile == null)
             {
@@ -33,7 +38,6 @@ public class AuthService : IAuthService
             }
             else
             {
-                Console.WriteLine("password: " + profile.Id + profile.Email);
                 var passwordCorrect = BCrypt.Net.BCrypt.Verify(loginDto.Password, profile.PasswordHash);
                 if (passwordCorrect)
                 {
@@ -63,21 +67,20 @@ public class AuthService : IAuthService
     public async Task<ServiceResponse<bool>> Logout(string sessionId)
     {
          var response = new ServiceResponse<bool>();
+         var profile = await _validator.ValidateSession(sessionId);
          try
          {
-
-             var profile = await _profileRepository.GetBySessionId(sessionId);
-             if (sessionId == "")
+             if (profile == null)
+             {
+                   response.Success = false;
+                   response.Message = "No profile found!";
+                   return response;                                
+             }
+             if (profile.SessionId == "")
              {
                   response.Success = false;
                   response.Message = "Already logged out!";
                   return response;                
-             }
-             else if (profile == null)
-             {
-                 response.Success = false;
-                 response.Message = "Session doesn't exist!";
-                 return response;
              }
              else
              {

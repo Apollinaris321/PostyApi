@@ -83,8 +83,16 @@ public class ProfileRepository : IProfileRepository
         return profile;       
     }
 
-    public async Task<ICollection<Profile>> GetAll()
+    public int GetAllLength()
     {
-        return await _context.Profiles.ToListAsync();
+        return _context.Profiles.Count();
+    }
+
+    public async Task<ICollection<Profile>> GetAll(int offset, int take)
+    {
+        return await _context.Profiles
+            .Skip(offset)
+            .Take(take)
+            .ToListAsync();
     }
 }

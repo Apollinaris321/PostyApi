@@ -1,140 +1,93 @@
-﻿using System.Security.Claims;
-using LearnApi.Models;
+﻿using LearnApi.Models;
+using LearnApi.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 namespace LearnApi.Controllers;
-
 [ApiController]
 [Route("api/[controller]")]
 public class CommentController : ControllerBase
 {
-    private readonly PostyContext _context;
-    private readonly IConfiguration _configuration;
-    private readonly UserManager<Profile> _userManager;
+    private readonly ICommentService _commentService;
 
-    public CommentController(PostyContext context, IConfiguration configuration, UserManager<Profile> userManager)
+    public CommentController(
+        ICommentService commentService
+        )
     {
-        _context = context;
-        _configuration = configuration;
-        _userManager = userManager;
+        _commentService = commentService;
     }
 
     [HttpGet]
     [Route("{id}")]
     public async Task<IActionResult> ById(long id)
     {
-        var comment = await _context.Comments
-            .Include(c => c.Profile)
-            .SingleOrDefaultAsync(c => c.Id == id);
-        
-        if (comment == null)
+        var response = await _commentService.GetById(id);
+        if (response.Success)
         {
-            return BadRequest($"Comment with this id: {id} doesn't exist!");
+            return Ok(response.Data);
         }
-        
-        return Ok(new CommentDto(comment));
+        return BadRequest(response.Error);
     }
 
     [HttpGet]
-    public async Task<IActionResult> All()
+    public async Task<IActionResult> All(int pageNumber = 1 , int pageSize = 10)
     {
-        return Ok(await _context.Comments
-            .Select(c => new CommentDto(c))
-            .ToListAsync());
+         var response = await _commentService.GetAll(pageNumber, pageSize);
+         if (response.Success)
+         {
+             return Ok(response.Data);
+         }
+         return BadRequest(response.Error);       
     }
     
-    // [HttpPost]
-    // [Route("{commentId}/likes")]
-    // public async Task<IActionResult> Like(long commentId)
-    // {  
-    //     var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
-    //     var profile = await _context.Profiles.SingleOrDefaultAsync(p => p.Username == username);
-    //     var comment = await _context.Comments.SingleOrDefaultAsync(c => c.Id == commentId);
-    //     if (profile == null || comment == null)
-    //     {
-    //         return BadRequest($"Comment or profile doesn't exist! profile: {username} comment: {commentId}");
-    //     }
-    //     var commentLike = new CommentLike
-    //     {
-    //         Profile = profile,
-    //         Comment = comment,
-    //         CreatedAt = DateTime.Now
-    //     };
-
-    //     try
-    //     {
-    //         var result = await _context.CommentLikes.AddAsync(commentLike);
-    //         await _context.SaveChangesAsync();
-    //         return Ok();
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         return BadRequest("You can only like comments once!");
-    //     }
-    // }
+    [HttpPost]
+    [Route("{commentId}/likes")]
+    public async Task<IActionResult> Like(long commentId)
+    {
+        var sessionId = HttpContext.Request.Cookies["auth"];
+        if (String.IsNullOrEmpty(sessionId))
+        {
+            return BadRequest("log in!");
+        }
+        var response = await _commentService.Like(commentId, sessionId);
+        if (response.Success)
+        {
+            return Ok(response.Data);
+        }
+        return BadRequest(response.Error);
+    }
      
     [HttpPut]
     [Route("{id}")]
-    public async Task<IActionResult> update(long id, CreateCommentDto commentDto)
+    public async Task<IActionResult> update(long commentId, CreateCommentDto commentDto)
     {
-        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
-        var comment = await _context.Comments
-            .Include(c => c.Profile)
-            .SingleOrDefaultAsync(c => c.Id == id && c.Profile.Username == username);
-        if (comment == null)
+        var sessionId = HttpContext.Request.Cookies["auth"];
+        if (String.IsNullOrEmpty(sessionId))
         {
-            return BadRequest($"Comment doesn't exist or doesn't belong to you! id: {id}");
+            return BadRequest("log in!");
         }
-
-        comment.Text = commentDto.Text;
-        await _context.SaveChangesAsync();
-        return Ok(new CommentDto(comment));
+        var response = await _commentService.Update(commentDto, commentId,  sessionId);
+        if (response.Success)
+        {
+            return Ok(response.Data);
+        }
+        return BadRequest(response.Error);
     }
- 
-    // [HttpDelete]
-    // [Route("{commentId}/likes")]
-    // public async Task<IActionResult> Dislike(long commentId)
-    // {
-    //     var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
-    //     var like = await _context.CommentLikes
-    //         .Include(c => c.Comment)
-    //         .Include(p => p.Profile)
-    //         .SingleOrDefaultAsync(c => c.CommentId == commentId && c.Profile.Username == username);
-    //     if (like == null)
-    //     {
-    //         return BadRequest($"You can only dislike things you liked!");
-    //     }
-    //     try
-    //     {
-    //         _context.CommentLikes.Remove(like);
-    //         await _context.SaveChangesAsync();
-    //         return Ok();
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         return BadRequest("Something went wrong when removing the like...");
-    //     }
-    // }   
     
     [HttpDelete]
     [Route("{id}")]
     public async Task<IActionResult> delete(long id)
     {
-        var username = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
-        var comment = await _context.Comments
-            .Include(c => c.Profile)
-            .Include(c => c.Post)
-            .SingleOrDefaultAsync(c => c.Id == id && c.Profile.Username == username);
-        if (comment == null)
-        {
-            return BadRequest($"Comment doesn't exist or doesn't belong to you! id: {id}");
-        }
-        _context.Comments.Remove(comment);
-        await _context.SaveChangesAsync();
-        return Ok();
+         var sessionId = HttpContext.Request.Cookies["auth"];
+         if (String.IsNullOrEmpty(sessionId))
+         {
+             return BadRequest("log in!");
+         }
+         var response = await _commentService.Delete(id,  sessionId);
+         if (response.Success)
+         {
+             return Ok(response.Data);
+         }
+         return BadRequest(response.Error);       
     }
-   
 }
