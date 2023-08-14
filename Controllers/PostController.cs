@@ -43,6 +43,7 @@ public class PostController : ControllerBase
         
         Console.WriteLine("My new feature!");
         return BadRequest(response.Error);
+        Console.WriteLine("Branch 2 new!");
     }
     
     [HttpGet]
