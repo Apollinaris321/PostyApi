@@ -13092,14 +13092,13 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\blura\\Desktop\\MathServer\\PostyApi.csproj",
+      "projectUniqueName": "C:\\Users\\blura\\Desktop\\Posty\\PostyApi.csproj",
       "projectName": "PostyApi",
-      "projectPath": "C:\\Users\\blura\\Desktop\\MathServer\\PostyApi.csproj",
+      "projectPath": "C:\\Users\\blura\\Desktop\\Posty\\PostyApi.csproj",
       "packagesPath": "C:\\Users\\blura\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\blura\\Desktop\\MathServer\\obj\\",
+      "outputPath": "C:\\Users\\blura\\Desktop\\Posty\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\blura\\Desktop\\NuGet.Config",
         "C:\\Users\\blura\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [

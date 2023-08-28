@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "nqySJ3gVQqCXzs2YpuZev2wU2cFsPzWEqkYu9wUNc51O5MO3OslC60nymNb/75S6kzKhqwvLJ72dDS4w/OAJDg==",
+  "dgSpecHash": "v9ihkTjrgPW9CiknsFfFqBEelR8utlQuWCTJQl3CqzTmFn1cmLDG/Qq5M8ZP6EutkzmKOlkzzUyqOr31/8eneg==",
   "success": true,
-  "projectFilePath": "C:\\Users\\blura\\Desktop\\MathServer\\PostyApi.csproj",
+  "projectFilePath": "C:\\Users\\blura\\Desktop\\Posty\\PostyApi.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\blura\\.nuget\\packages\\azure.core\\1.24.0\\azure.core.1.24.0.nupkg.sha512",
     "C:\\Users\\blura\\.nuget\\packages\\azure.identity\\1.6.0\\azure.identity.1.6.0.nupkg.sha512",
