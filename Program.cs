@@ -1,4 +1,6 @@
 using LearnApi.Models;
+using LearnApi.Repositories;
+using LearnApi.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -7,6 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddDistributedMemoryCache();
+
+builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
 
 builder.Services.AddHttpLogging(logging =>
 {
@@ -92,3 +97,5 @@ app.UseAuthorization( );
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

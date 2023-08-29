@@ -9,13 +9,12 @@ namespace LearnApi.Models;
 public class Profile : IdentityUser
 {
     public DateTime CreatedAt { get; set; }
+    [JsonIgnore] 
+    public ICollection<Post> Posts { get; set; } = new List<Post>();
+    [JsonIgnore] 
+    public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     [JsonIgnore]
-    public ICollection<Post> Posts { get; set; }
-    [JsonIgnore]
-    public ICollection<Comment> Comments { get; set; }
-    [JsonIgnore]
-    public ICollection<PostLike> LikedPosts { get; set; }
-    [JsonIgnore]
-    public ICollection<CommentLike> LikedComments { get; set; }
-    public Profile(){}
+    public ICollection<PostLike> LikedPosts { get; set; } = new List<PostLike>();
+    [JsonIgnore] 
+    public ICollection<CommentLike> LikedComments { get; set; } = new List<CommentLike>();
 }

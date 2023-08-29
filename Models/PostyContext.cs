@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LearnApi.Models;
-public class PostyContext : IdentityDbContext<IdentityUser>
+public class PostyContext : IdentityDbContext<Profile>
 {
     public PostyContext(DbContextOptions<PostyContext> options)
         : base(options)

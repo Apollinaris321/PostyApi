@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using LearnApi.Models;
 using LearnApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -28,18 +29,17 @@ public class PostController : ControllerBase
     {
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var len = _context.Posts.Count();
-        var validFilter = new PaginationFilter(pageSize, len);       
+        var validFilter = new PaginationFilter(pageNumber, pageSize, len);       
         validFilter.SetCurrentPage(pageNumber);
 
         if (order == "date")
         {
-            var response = await _context.Posts
-                .Include(post => post.Profile)
-                .Include(post => post.ProfileLikes)
-                .OrderByDescending(p => p.CreatedAt)
-                .Select(post => new PostDto(post, userId))
-                .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
-                .Take(validFilter.PageSize)
+            var response = await Queryable.Take(_context.Posts
+                    .Include(post => post.Profile)
+                    .Include(post => post.ProfileLikes)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Select(post => new PostDto(post, userId))
+                    .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize), (int) validFilter.PageSize)
                 .ToListAsync();                   
             
             return Ok(new
@@ -51,13 +51,12 @@ public class PostController : ControllerBase
         }
         else if (order == "likes")
         {
-             var response = await _context.Posts
-                 .Include(post => post.Profile)
-                 .Include(post => post.ProfileLikes)
-                 .OrderByDescending(p => p.CreatedAt)
-                 .Select(post => new PostDto(post, userId))
-                 .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
-                 .Take(validFilter.PageSize)
+             var response = await Queryable.Take(_context.Posts
+                     .Include(post => post.Profile)
+                     .Include(post => post.ProfileLikes)
+                     .OrderByDescending(p => p.CreatedAt)
+                     .Select(post => new PostDto(post, userId))
+                     .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize), (int) validFilter.PageSize)
                  .ToListAsync();                   
              
              return Ok(new
@@ -78,33 +77,31 @@ public class PostController : ControllerBase
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var len = _context.Comments
             .Count();
-        var validFilter = new PaginationFilter(pageSize, len);
+        var validFilter = new PaginationFilter(pageNumber, pageSize, len);
         validFilter.SetCurrentPage(pageNumber);
 
         if (order == "likes")
         {
-            var comments = await _context.Comments
-                .Include(comment => comment.Profile)
-                .Include(comment => comment.LikedBy)
-                .Where(comment => comment.PostId == postId)
-                .OrderByDescending(comment => comment.Likes)
-                .Select(c =>  new CommentDto(c, userId))
-                .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
-                .Take(validFilter.PageSize)
+            var comments = await Queryable.Take(_context.Comments
+                    .Include(comment => comment.Profile)
+                    .Include(comment => comment.LikedBy)
+                    .Where(comment => comment.PostId == postId)
+                    .OrderByDescending(comment => comment.Likes)
+                    .Select(c =>  new CommentDto(c, userId))
+                    .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize), (int) validFilter.PageSize)
                 .ToListAsync();
  
             return Ok(new { currentPage = validFilter.CurrentPage, lastPage = validFilter.LastPage, comments = comments });           
         }
         else if(order == "date")
         {
-             var comments = await _context.Comments
-                 .Include(comment => comment.Profile)
-                 .Include(comment => comment.LikedBy)
-                 .Where(comment => comment.PostId == postId)
-                 .OrderByDescending(comment => comment.CreatedAt)
-                 .Select(c =>  new CommentDto(c, userId))
-                 .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize)
-                 .Take(validFilter.PageSize)
+             var comments = await Queryable.Take(_context.Comments
+                     .Include(comment => comment.Profile)
+                     .Include(comment => comment.LikedBy)
+                     .Where(comment => comment.PostId == postId)
+                     .OrderByDescending(comment => comment.CreatedAt)
+                     .Select(c =>  new CommentDto(c, userId))
+                     .Skip((validFilter.CurrentPage - 1) * validFilter.PageSize), (int) validFilter.PageSize)
                  .ToListAsync();
   
              return Ok(new { currentPage = validFilter.CurrentPage, lastPage = validFilter.LastPage, comments = comments });                      
@@ -142,6 +139,7 @@ public class PostController : ControllerBase
     }
  
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> create(CreatePostDto postDto)
     {
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -168,6 +166,7 @@ public class PostController : ControllerBase
     }   
      
     [HttpPost]
+    [Authorize]
     [Route("{postId}/comments")]
     public async Task<IActionResult> AddComment(long postId,CreateCommentDto commentPayload)
     {
@@ -197,6 +196,7 @@ public class PostController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     [Route("{postId}/likes")]
     public async Task<IActionResult> Like(long postId)
     {
@@ -232,6 +232,7 @@ public class PostController : ControllerBase
     }
 
     [HttpPut]
+    [Authorize]
     [Route("{id}")]
     public async Task<IActionResult> Edit(long id, CreatePostDto postDto)
     {
@@ -257,6 +258,7 @@ public class PostController : ControllerBase
     }
 
     [HttpDelete]
+    [Authorize]
     [Route("{id}")]
     public async Task<IActionResult> deleteById(long id)
     {
@@ -283,6 +285,7 @@ public class PostController : ControllerBase
     }
 
     [HttpDelete]
+    [Authorize]
     [Route("{postId}/likes")]
     public async Task<IActionResult> Dislike(long postId)
     {

@@ -15,7 +15,7 @@ public class PaginationFilter
         this.PageSize = 10;
     }
 
-    public PaginationFilter(int pageSize, int length)
+    public PaginationFilter(int currentPage, int pageSize, int length)
     {
         if (pageSize > 10)
         {
@@ -33,6 +33,13 @@ public class PaginationFilter
         {
             this.LastPage = 1;
         }
+        
+        this.SetCurrentPage(currentPage);
+    }
+
+    public int Skip()
+    {
+        return (this.CurrentPage - 1) * this.PageSize;
     }
 
     public void SetCurrentPage(int number)
